@@ -102,23 +102,21 @@ Base URL: `/api/solicitudes`
 - `id` de las rutas debe ser numérico.
 - El cuerpo de solicitud no puede venir vacío en POST, PUT o PATCH.
 
-## Criterio de diseño
+## SOLID aplicado en el proyecto
 
-La solución se construyó con una intención clara: mantener el dominio limpio y mover los detalles de infraestructura a su propia capa. Esto permite que el código sea más fácil de explicar, probar y modificar sin romper el resto del sistema.
+Para esta práctica traté de no quedarme solo con la definición teórica de SOLID. La idea fue llevar cada principio a una decisión concreta dentro del proyecto, de forma que el código muestre claramente qué hace cada parte y por qué está separada así. En vez de mezclar validación, persistencia y respuestas HTTP en un solo bloque, organicé el backend en capas para que cada pieza tenga una responsabilidad clara y sea más fácil de mantener.
 
 ### 1) Responsabilidad Única
 
-Cada clase cumple un rol concreto:
+Este principio me ayudó a evitar el error más común en una API pequeña: poner toda la lógica en el controlador. Aquí lo dividí de esta manera: el controlador solo recibe la petición y devuelve la respuesta, el servicio toma las decisiones de negocio y el repositorio habla con la base de datos. Eso hace que cada clase tenga una sola razón para cambiar.
 
-- el controlador recibe y responde HTTP,
-- el servicio valida y decide,
-- el repositorio persiste.
-
-Evidencia real:
+Dónde lo apliqué:
 
 - [src/controllers/operational-request.controller.ts](src/controllers/operational-request.controller.ts)
 - [src/services/operational-request.service.ts](src/services/operational-request.service.ts)
 - [src/repositories/postgres-operational-request.repository.ts](src/repositories/postgres-operational-request.repository.ts)
+
+Evidencia real:
 
 ```ts
 // src/controllers/operational-request.controller.ts
@@ -144,12 +142,14 @@ async updateStatus(id: string, dto: UpdateOperationalRequestStatusDto): Promise<
 
 ### 2) Abierto/Cerrado
 
-El servicio depende de la interfaz `OperationalRequestRepository`, no de una implementación concreta. Eso permite cambiar PostgreSQL por otra tecnología sin rehacer la lógica de negocio.
+Yo entendí este principio como la idea de que una clase no debería obligarme a reescribir su lógica solo porque cambie una implementación interna. En este proyecto el servicio trabaja contra una interfaz, no contra una clase concreta de PostgreSQL. Si mañana cambiara de base de datos o de estrategia de persistencia, la lógica del servicio seguiría casi igual.
 
-Evidencia real:
+Dónde lo apliqué:
 
 - [src/interfaces/operational-request-repository.ts](src/interfaces/operational-request-repository.ts)
 - [src/services/operational-request.service.ts](src/services/operational-request.service.ts)
+
+Evidencia real:
 
 ```ts
 // src/interfaces/operational-request-repository.ts
@@ -168,11 +168,14 @@ export interface OperationalRequestRepository {
 
 ### 3) Sustitución de Liskov
 
-Toda implementación del repositorio debe poder sustituirse sin alterar el contrato que consume el servicio. Por eso el servicio trabaja con la abstracción y no con detalles del motor SQL.
+Este principio me parece importante porque evita que una implementación “rompa” el comportamiento esperado solo por cambiar la clase concreta. En otras palabras, si el servicio espera un repositorio, cualquier repositorio que cumpla el contrato debe funcionar sin sorpresas. Por eso cuidé que la interfaz describa exactamente lo que el servicio necesita y no dependa de detalles internos.
 
-Evidencia real:
+Dónde lo apliqué:
 
 - [src/interfaces/operational-request-repository.ts](src/interfaces/operational-request-repository.ts)
+- [src/services/operational-request.service.ts](src/services/operational-request.service.ts)
+
+Evidencia real:
 
 ```ts
 // src/services/operational-request.service.ts
@@ -181,12 +184,14 @@ constructor(private readonly repository: OperationalRequestRepository) {}
 
 ### 4) Segregación de Interfaces
 
-No se obliga a enviar todos los campos cuando solo cambia el estado. El endpoint específico de `PATCH` usa su propio DTO y su propia ruta.
+Yo lo interpreté como una forma de no obligar a los consumidores a depender de cosas que no necesitan. En esta práctica eso se nota sobre todo en el caso del cambio de estado: no tiene sentido exigir el objeto completo de la solicitud si solo quiero modificar `estado`. Por eso separé ese caso en un DTO específico y en una ruta propia.
 
-Evidencia real:
+Dónde lo apliqué:
 
 - [src/dtos/update-operational-request-status.dto.ts](src/dtos/update-operational-request-status.dto.ts)
 - [src/routes/operational-request.routes.ts](src/routes/operational-request.routes.ts)
+
+Evidencia real:
 
 ```ts
 // src/routes/operational-request.routes.ts
@@ -195,12 +200,14 @@ router.patch("/:id/status", asyncHandler(controller.updateStatus));
 
 ### 5) Inversión de Dependencias
 
-El módulo de alto nivel depende de una abstracción. La infraestructura concreta vive en el repositorio PostgreSQL y no contamina la lógica del servicio.
+Para mí, este principio fue el más importante en la arquitectura: las decisiones principales del sistema no deben depender de detalles de infraestructura, sino de abstracciones. En este proyecto la lógica de negocio no conoce cómo se conecta PostgreSQL, solo sabe que existe un repositorio que cumple un contrato. Eso me permitió mantener el centro del sistema limpio y aislado del detalle técnico.
 
-Evidencia real:
+Dónde lo apliqué:
 
 - [src/services/operational-request.service.ts](src/services/operational-request.service.ts)
 - [src/repositories/postgres-operational-request.repository.ts](src/repositories/postgres-operational-request.repository.ts)
+
+Evidencia real:
 
 ```ts
 // src/repositories/postgres-operational-request.repository.ts
@@ -208,6 +215,20 @@ export class PostgresOperationalRequestRepository implements OperationalRequestR
   constructor(private readonly pool: Pool) {}
 }
 ```
+
+## Reflexión breve sobre SOLID
+
+Después de aplicar estos principios, la diferencia más clara que noté fue en la claridad del proyecto. El código dejó de sentirse como una secuencia de instrucciones pegadas una detrás de otra, y pasó a tener intención: cada archivo responde a una necesidad concreta. Eso no solo ayuda a que funcione hoy, sino a que sea entendible mañana por otra persona o por mí mismo cuando tenga que corregirlo.
+
+## Seguridad y limpieza del código
+
+La solución se revisó con un criterio pragmático:
+
+- Se validan entradas antes de persistir.
+- Se usan consultas parametrizadas con `pg`.
+- Se responde con errores HTTP explícitos y controlados.
+- Se evita mezclar reglas de negocio con acceso a datos.
+- Se mantiene el endpoint de estado separado del update completo.
 
 ## Seguridad y limpieza del código
 
