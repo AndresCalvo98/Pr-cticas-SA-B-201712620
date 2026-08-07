@@ -1,0 +1,18 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno (¡Muy importante no subir las credenciales reales!)
+.env
+
+# Base de datos local (evita subir registros de prueba)
+*.sqlite
+database.sqlite
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

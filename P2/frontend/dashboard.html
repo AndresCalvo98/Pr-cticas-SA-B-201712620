@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - P2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="min-h-screen p-8">
+
+    <nav class="max-w-4xl mx-auto flex justify-between items-center mb-8 glass-panel p-4 rounded-xl">
+        <div class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Sistema P2</div>
+        <div class="flex items-center gap-4">
+            <span id="user-info" class="text-slate-300 text-sm">Cargando...</span>
+            <button id="logout-btn" class="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition-colors text-sm font-semibold border border-red-500/30">Cerrar Sesión</button>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Ruta 1 Card -->
+        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+            <div class="absolute -right-10 -top-10 w-32 h-32 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 group-hover:opacity-30 transition-opacity"></div>
+            <h2 class="text-xl font-semibold mb-2">Probar Ruta 1</h2>
+            <p class="text-sm text-slate-400 mb-6">Acceso exclusivo para rol <span class="font-bold text-blue-400">Admin</span>.</p>
+            <button id="btn-ruta1" class="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors font-medium">Ejecutar GET /api/ruta1</button>
+            <div id="res-ruta1" class="mt-4 p-3 rounded-lg text-sm font-mono hidden bg-black/30 border border-slate-700"></div>
+        </div>
+
+        <!-- Ruta 2 Card -->
+        <div class="glass-panel p-6 rounded-2xl relative overflow-hidden group">
+            <div class="absolute -right-10 -top-10 w-32 h-32 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 group-hover:opacity-30 transition-opacity"></div>
+            <h2 class="text-xl font-semibold mb-2">Probar Ruta 2</h2>
+            <p class="text-sm text-slate-400 mb-6">Acceso permitido para roles <span class="font-bold text-blue-400">Admin</span> y <span class="font-bold text-purple-400">Cliente</span>.</p>
+            <button id="btn-ruta2" class="w-full py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors font-medium">Ejecutar GET /api/ruta2</button>
+            <div id="res-ruta2" class="mt-4 p-3 rounded-lg text-sm font-mono hidden bg-black/30 border border-slate-700"></div>
+        </div>
+
+    </main>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
