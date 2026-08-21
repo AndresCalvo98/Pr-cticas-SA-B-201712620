@@ -18,6 +18,21 @@ Este repositorio contiene la implementación oficial de la **Práctica 4**, dond
 
 ---
 
+## 📂 Organización del Repositorio
+
+El repositorio está estructurado de la siguiente manera para separar responsabilidades y facilitar el despliegue independiente de cada servicio:
+
+*   **`/api-gateway`**: Contiene la configuración de NGINX que actúa como proxy inverso y punto de entrada único para la plataforma.
+*   **`/approval-service`**: Microservicio en Node.js encargado de orquestar el flujo de aprobación de 3 pasos (Maker-Checker-Authorizer), implementando consultas nativas en GraphQL y REST.
+*   **`/auth-service`**: Microservicio en Node.js que gestiona la autenticación y autorización (Integración de la Práctica 2).
+*   **`/notification-service`**: Microservicio en Node.js dedicado al procesamiento asíncrono y envío de alertas.
+*   **`/transaction-service`**: Microservicio en Go encargado de la carga de archivos, validación inicial de transacciones y persistencia.
+*   **`docker-compose.yml`**: Archivo de orquestación que define y levanta todos los contenedores de la solución.
+*   **`postman_collection.json`**: Colección de pruebas de Postman que documenta los contratos de los endpoints (REST y GraphQL) de los microservicios.
+*   **`README.md`**: Este documento, que incluye la explicación de la arquitectura, estructura y aplicación de los principios SOLID.
+
+---
+
 ## 🏛️ Aplicación de Principios SOLID
 
 La calidad del código es una prioridad en arquitecturas modernas. A lo largo del desarrollo de estos microservicios, se implementaron rigurosamente los 5 principios SOLID. A continuación se presenta la evidencia técnica extraída directamente del código fuente:
