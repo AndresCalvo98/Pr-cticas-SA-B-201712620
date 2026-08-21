@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - auth-service
+      - transaction-service
+      - approval-service
+      - notification-service
+
+  auth-service:
+    build:
+      context: ../
+      dockerfile: P4/auth-service/Dockerfile
+    ports:
+      - "4000:4000"
+
+  transaction-service:
+    build: ./transaction-service
+    ports:
+      - "4001:4001"
+
+  approval-service:
+    build: ./approval-service
+    ports:
+      - "4002:4002"
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "4003:4003"

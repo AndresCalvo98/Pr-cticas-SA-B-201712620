@@ -1,0 +1,117 @@
+{
+	"info": {
+		"_postman_id": "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+		"name": "API Contratos - Práctica 4",
+		"description": "Contratos de los microservicios implementados en la Práctica 4 para el sistema bancario.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth Service",
+			"item": [
+				{
+					"name": "Authorize (REST)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"Admin\",\n  \"path\": \"/api/ruta1\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/auth/authorize",
+							"protocol": "http",
+							"host": [ "localhost" ],
+							"port": "8080",
+							"path": [ "api", "auth", "authorize" ]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Transaction Service",
+			"item": [
+				{
+					"name": "Upload CSV (REST)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/transactions/upload",
+							"protocol": "http",
+							"host": [ "localhost" ],
+							"port": "8080",
+							"path": [ "api", "transactions", "upload" ]
+						}
+					}
+				},
+				{
+					"name": "Get Batch Status (GraphQL)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/graphql/transactions?query={batchStatus(batchId:\"batch-123\")}",
+							"protocol": "http",
+							"host": [ "localhost" ],
+							"port": "8080",
+							"path": [ "graphql", "transactions" ],
+							"query": [
+								{ "key": "query", "value": "{batchStatus(batchId:\"batch-123\")}" }
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Approval Service",
+			"item": [
+				{
+					"name": "Approve Batch (REST)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"Checker\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/approvals/batch-123",
+							"protocol": "http",
+							"host": [ "localhost" ],
+							"port": "8080",
+							"path": [ "api", "approvals", "batch-123" ]
+						}
+					}
+				},
+				{
+					"name": "Get Workflow (GraphQL)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/graphql/approvals?query={getWorkflow(batchId:\"batch-123\"){batchId,status}}",
+							"protocol": "http",
+							"host": [ "localhost" ],
+							"port": "8080",
+							"path": [ "graphql", "approvals" ],
+							"query": [
+								{ "key": "query", "value": "{getWorkflow(batchId:\"batch-123\"){batchId,status}}" }
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}
