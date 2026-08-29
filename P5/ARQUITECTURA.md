@@ -8,6 +8,64 @@ Este documento detalla la arquitectura completa de la plataforma de microservici
 
 El sistema es una plataforma de **Microservicios** orquestada mediante **Kubernetes** y empaquetada usando **Helm**. Sigue los principios de alta disponibilidad, autoescalado y separación de responsabilidades.
 
+### Diagrama de Flujo y Topología
+
+```mermaid
+graph TD
+    %% Estilos de Nodos
+    classDef user fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef k8s fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef gateway fill:#ffcc80,stroke:#e65100,stroke-width:2px;
+    classDef ms fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px;
+    classDef db fill:#b3e5fc,stroke:#0277bd,stroke-width:2px;
+    classDef broker fill:#d1c4e9,stroke:#4527a0,stroke-width:2px;
+    classDef cron fill:#ffccbc,stroke:#d84315,stroke-width:2px;
+
+    %% Nodos
+    Client((Usuario / Postman)):::user
+
+    subgraph Kubernetes Cluster [Clúster Kubernetes - Namespace: sa-p5]
+        Ingress[Ingress Controller\n(Minikube Tunnel)]:::k8s
+        
+        Gateway[API Gateway\n(NGINX Proxy)]:::gateway
+        
+        Auth[Auth Service\n(Node.js)]:::ms
+        Transaction[Transaction Service\n(Node.js)]:::ms
+        Approval[Approval Service\n(Node.js)]:::ms
+        Notification[Notification Service\n(Node.js)]:::ms
+        
+        Postgres[(PostgreSQL\nStatefulSet + PVC)]:::db
+        RabbitMQ{RabbitMQ\nStatefulSet + PVC}:::broker
+        
+        CronInsert((CronJob\nInsert DB)):::cron
+        CronSummary((CronJob\nSummary Broker)):::cron
+    end
+
+    %% Conexiones de Entrada
+    Client -->|HTTP/REST/GraphQL| Ingress
+    Ingress -->|Enruta tráfico| Gateway
+    
+    %% Conexiones Síncronas (Gateway a MS)
+    Gateway -->|/api/auth| Auth
+    Gateway -->|/api/transactions\n/graphql/transactions| Transaction
+    Gateway -->|/api/approvals\n/graphql/approvals| Approval
+    Gateway -->|/api/notifications| Notification
+    
+    %% Conexiones a Base de Datos
+    Auth -.->|Validación de Usuarios| Postgres
+    Transaction -.->|Guarda Transacciones| Postgres
+    Approval -.->|Aprueba Lotes| Postgres
+    
+    %% Conexiones Asíncronas (Broker)
+    Transaction ==>|Publica 'BatchCreated'| RabbitMQ
+    Approval ==>|Publica 'BatchApproved'| RabbitMQ
+    RabbitMQ ==>|Consume Eventos| Notification
+    
+    %% Conexiones CronJobs
+    CronInsert -.->|Inserta registros\n(Directo)| Postgres
+    CronSummary ==>|Publica resumen| RabbitMQ
+```
+
 La arquitectura se compone de las siguientes piezas principales:
 *   **API Gateway (Nginx):** Punto de entrada único (Single Point of Entry) que enruta el tráfico externo hacia los microservicios internos adecuados.
 *   **Microservicios (Node.js):** Lógica de negocio descentralizada (`auth`, `transaction`, `approval`, `notification`).
