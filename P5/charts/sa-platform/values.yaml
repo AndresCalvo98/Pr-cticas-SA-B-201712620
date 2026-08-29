@@ -1,0 +1,64 @@
+# Valores base
+global:
+  namespace: sa-p5
+
+# API Gateway (NGINX Proxy)
+api-gateway:
+  replicaCount: 1
+  image:
+    repository: mi-repo/api-gateway
+  service:
+    port: 80
+  probes:
+    enabled: false # Nginx basico no tiene endpoint especial para probe
+  autoscaling:
+    minReplicas: 2
+    maxReplicas: 5
+
+auth-service:
+  image:
+    repository: mi-repo/auth-service
+  service:
+    port: 4000
+  probes:
+    enabled: false
+  env:
+    NODE_ENV: production
+
+transaction-service:
+  image:
+    repository: mi-repo/transaction-service
+  service:
+    port: 4001
+  probes:
+    enabled: false
+  env: {}
+
+approval-service:
+  image:
+    repository: mi-repo/approval-service
+  service:
+    port: 4002
+  probes:
+    enabled: false
+  env: {}
+
+notification-service:
+  image:
+    repository: mi-repo/notification-service
+  service:
+    port: 4003
+  probes:
+    enabled: false
+  env: {}
+
+
+postgresql:
+  auth:
+    username: ""
+    password: ""
+    database: "transacciones"
+  primary:
+    persistence:
+      enabled: true
+      size: 1Gi

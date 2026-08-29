@@ -1,0 +1,170 @@
+{
+	"info": {
+		"_postman_id": "b3f3b9c0-1234-5678-abcd-ef0123456789",
+		"name": "SA Práctica 5 - K8s API Gateway",
+		"description": "Colección de pruebas para los microservicios en Kubernetes. Asegúrate de tener corriendo el comando `kubectl port-forward svc/sa-platform-api-gateway 8080:80 -n sa-p5`.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth Service",
+			"item": [
+				{
+					"name": "Test Authorize (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"role\": \"Admin\",\n    \"path\": \"/api/ruta1\"\n}"
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8080/api/auth/authorize",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"auth",
+								"authorize"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Transaction Service",
+			"item": [
+				{
+					"name": "Test Upload",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/api/transactions/upload",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"transactions",
+								"upload"
+							]
+						}
+					}
+				},
+				{
+					"name": "GraphQL Transactions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query {\n  # Cambia esto por tu query real\n  transactions {\n    id\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8080/graphql/transactions",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"graphql",
+								"transactions"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Approval Service",
+			"item": [
+				{
+					"name": "Test Approvals",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1:8080/api/approvals",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"approvals"
+							]
+						}
+					}
+				},
+				{
+					"name": "GraphQL Approvals",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query {\n  # Cambia esto por tu query real\n  approvals {\n    id\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1:8080/graphql/approvals",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8080",
+							"path": [
+								"graphql",
+								"approvals"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

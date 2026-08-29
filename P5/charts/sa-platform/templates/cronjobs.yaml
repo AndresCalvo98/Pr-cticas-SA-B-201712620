@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cronjob-insert-db
+  labels:
+    app.kubernetes.io/name: cronjob-insert-db
+spec:
+  schedule: "*/2 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: sa-platform-cronjobs
+          restartPolicy: OnFailure
+          containers:
+          - name: cronjob1
+            image: "mi-repo/cronjob1:latest"
+            imagePullPolicy: IfNotPresent
+            envFrom:
+            - secretRef:
+                name: sa-platform-secrets
+            env:
+            - name: CARNE
+              value: "201712620"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cronjob-summary-broker
+  labels:
+    app.kubernetes.io/name: cronjob-summary-broker
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          serviceAccountName: sa-platform-cronjobs
+          restartPolicy: OnFailure
+          containers:
+          - name: cronjob2
+            image: "mi-repo/cronjob2:latest"
+            imagePullPolicy: IfNotPresent
+            envFrom:
+            - secretRef:
+                name: sa-platform-secrets

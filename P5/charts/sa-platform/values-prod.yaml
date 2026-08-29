@@ -1,0 +1,20 @@
+# Entorno de produccion
+api-gateway:
+  replicaCount: 2
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+auth-service:
+  replicaCount: 2
+
+transaction-service:
+  replicaCount: 2
+
+approval-service:
+  replicaCount: 2
+
+notification-service:
+  replicaCount: 2
+

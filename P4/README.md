@@ -16,7 +16,6 @@ Este repositorio contiene la implementación oficial de la **Práctica 4**, dond
 - **Consultas Avanzadas**: **GraphQL** nativo implementado en los servicios `transaction-service` y `approval-service`.
 - **Contratos API**: Documentación de endpoints provista en el archivo `postman_collection.json`.
 
----
 
 ## 📂 Organización del Repositorio
 
