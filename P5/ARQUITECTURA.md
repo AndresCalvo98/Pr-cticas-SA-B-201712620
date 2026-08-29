@@ -12,57 +12,53 @@ El sistema es una plataforma de **Microservicios** orquestada mediante **Kuberne
 
 ```mermaid
 graph TD
-    %% Estilos de Nodos
-    classDef user fill:#f9f9f9,stroke:#333,stroke-width:2px;
-    classDef k8s fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,stroke-dasharray: 5 5;
-    classDef gateway fill:#ffcc80,stroke:#e65100,stroke-width:2px;
-    classDef ms fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px;
-    classDef db fill:#b3e5fc,stroke:#0277bd,stroke-width:2px;
-    classDef broker fill:#d1c4e9,stroke:#4527a0,stroke-width:2px;
-    classDef cron fill:#ffccbc,stroke:#d84315,stroke-width:2px;
-
     %% Nodos
-    Client(("Usuario / Postman")):::user
+    Client(("Usuario / Postman"))
 
     subgraph Kubernetes Cluster [Clúster Kubernetes - Namespace: sa-p5]
-        Ingress["Ingress Controller<br/>(Minikube Tunnel)"]:::k8s
+        Ingress["Ingress Controller<br/>(Minikube Tunnel)"]
+        Gateway["API Gateway<br/>(NGINX Proxy)"]
         
-        Gateway["API Gateway<br/>(NGINX Proxy)"]:::gateway
+        subgraph Microservicios [Lógica de Negocio]
+            Auth["Auth Service"]
+            Transaction["Transaction Service"]
+            Approval["Approval Service"]
+            Notification["Notification Service"]
+        end
         
-        Auth["Auth Service<br/>(Node.js)"]:::ms
-        Transaction["Transaction Service<br/>(Node.js)"]:::ms
-        Approval["Approval Service<br/>(Node.js)"]:::ms
-        Notification["Notification Service<br/>(Node.js)"]:::ms
+        subgraph Almacenamiento [Estado y Colas]
+            Postgres[("PostgreSQL<br/>(StatefulSet)")]
+            RabbitMQ{"RabbitMQ<br/>(StatefulSet)"}
+        end
         
-        Postgres[("PostgreSQL<br/>StatefulSet + PVC")]:::db
-        RabbitMQ{"RabbitMQ<br/>StatefulSet + PVC"}:::broker
-        
-        CronInsert(("CronJob<br/>Insert DB")):::cron
-        CronSummary(("CronJob<br/>Summary Broker")):::cron
+        subgraph Tareas Programadas [CronJobs]
+            CronInsert(("CronJob<br/>Insert DB"))
+            CronSummary(("CronJob<br/>Summary Broker"))
+        end
     end
 
     %% Conexiones de Entrada
-    Client -->|"HTTP/REST/GraphQL"| Ingress
+    Client -->|"HTTP/REST"| Ingress
     Ingress -->|"Enruta tráfico"| Gateway
     
     %% Conexiones Síncronas (Gateway a MS)
     Gateway -->|"/api/auth"| Auth
-    Gateway -->|"/api/transactions<br/>/graphql/transactions"| Transaction
-    Gateway -->|"/api/approvals<br/>/graphql/approvals"| Approval
+    Gateway -->|"/api/transactions"| Transaction
+    Gateway -->|"/api/approvals"| Approval
     Gateway -->|"/api/notifications"| Notification
     
     %% Conexiones a Base de Datos
-    Auth -.->|"Validación de Usuarios"| Postgres
-    Transaction -.->|"Guarda Transacciones"| Postgres
-    Approval -.->|"Aprueba Lotes"| Postgres
+    Auth -.->|"Consulta Rol"| Postgres
+    Transaction -.->|"Guarda Transacción"| Postgres
+    Approval -.->|"Aprueba Lote"| Postgres
     
     %% Conexiones Asíncronas (Broker)
-    Transaction ==>|"Publica 'BatchCreated'"| RabbitMQ
-    Approval ==>|"Publica 'BatchApproved'"| RabbitMQ
+    Transaction ==>|"Evento: Creado"| RabbitMQ
+    Approval ==>|"Evento: Aprobado"| RabbitMQ
     RabbitMQ ==>|"Consume Eventos"| Notification
     
     %% Conexiones CronJobs
-    CronInsert -.->|"Inserta registros<br/>(Directo)"| Postgres
+    CronInsert -.->|"Inserta masivo"| Postgres
     CronSummary ==>|"Publica resumen"| RabbitMQ
 ```
 
