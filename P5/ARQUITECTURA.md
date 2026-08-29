@@ -22,48 +22,48 @@ graph TD
     classDef cron fill:#ffccbc,stroke:#d84315,stroke-width:2px;
 
     %% Nodos
-    Client((Usuario / Postman)):::user
+    Client(("Usuario / Postman")):::user
 
     subgraph Kubernetes Cluster [Clúster Kubernetes - Namespace: sa-p5]
-        Ingress[Ingress Controller\n(Minikube Tunnel)]:::k8s
+        Ingress["Ingress Controller<br/>(Minikube Tunnel)"]:::k8s
         
-        Gateway[API Gateway\n(NGINX Proxy)]:::gateway
+        Gateway["API Gateway<br/>(NGINX Proxy)"]:::gateway
         
-        Auth[Auth Service\n(Node.js)]:::ms
-        Transaction[Transaction Service\n(Node.js)]:::ms
-        Approval[Approval Service\n(Node.js)]:::ms
-        Notification[Notification Service\n(Node.js)]:::ms
+        Auth["Auth Service<br/>(Node.js)"]:::ms
+        Transaction["Transaction Service<br/>(Node.js)"]:::ms
+        Approval["Approval Service<br/>(Node.js)"]:::ms
+        Notification["Notification Service<br/>(Node.js)"]:::ms
         
-        Postgres[(PostgreSQL\nStatefulSet + PVC)]:::db
-        RabbitMQ{RabbitMQ\nStatefulSet + PVC}:::broker
+        Postgres[("PostgreSQL<br/>StatefulSet + PVC")]:::db
+        RabbitMQ{"RabbitMQ<br/>StatefulSet + PVC"}:::broker
         
-        CronInsert((CronJob\nInsert DB)):::cron
-        CronSummary((CronJob\nSummary Broker)):::cron
+        CronInsert(("CronJob<br/>Insert DB")):::cron
+        CronSummary(("CronJob<br/>Summary Broker")):::cron
     end
 
     %% Conexiones de Entrada
-    Client -->|HTTP/REST/GraphQL| Ingress
-    Ingress -->|Enruta tráfico| Gateway
+    Client -->|"HTTP/REST/GraphQL"| Ingress
+    Ingress -->|"Enruta tráfico"| Gateway
     
     %% Conexiones Síncronas (Gateway a MS)
-    Gateway -->|/api/auth| Auth
-    Gateway -->|/api/transactions\n/graphql/transactions| Transaction
-    Gateway -->|/api/approvals\n/graphql/approvals| Approval
-    Gateway -->|/api/notifications| Notification
+    Gateway -->|"/api/auth"| Auth
+    Gateway -->|"/api/transactions<br/>/graphql/transactions"| Transaction
+    Gateway -->|"/api/approvals<br/>/graphql/approvals"| Approval
+    Gateway -->|"/api/notifications"| Notification
     
     %% Conexiones a Base de Datos
-    Auth -.->|Validación de Usuarios| Postgres
-    Transaction -.->|Guarda Transacciones| Postgres
-    Approval -.->|Aprueba Lotes| Postgres
+    Auth -.->|"Validación de Usuarios"| Postgres
+    Transaction -.->|"Guarda Transacciones"| Postgres
+    Approval -.->|"Aprueba Lotes"| Postgres
     
     %% Conexiones Asíncronas (Broker)
-    Transaction ==>|Publica 'BatchCreated'| RabbitMQ
-    Approval ==>|Publica 'BatchApproved'| RabbitMQ
-    RabbitMQ ==>|Consume Eventos| Notification
+    Transaction ==>|"Publica 'BatchCreated'"| RabbitMQ
+    Approval ==>|"Publica 'BatchApproved'"| RabbitMQ
+    RabbitMQ ==>|"Consume Eventos"| Notification
     
     %% Conexiones CronJobs
-    CronInsert -.->|Inserta registros\n(Directo)| Postgres
-    CronSummary ==>|Publica resumen| RabbitMQ
+    CronInsert -.->|"Inserta registros<br/>(Directo)"| Postgres
+    CronSummary ==>|"Publica resumen"| RabbitMQ
 ```
 
 La arquitectura se compone de las siguientes piezas principales:
