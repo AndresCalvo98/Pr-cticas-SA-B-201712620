@@ -1,8 +1,8 @@
 {
 	"info": {
-		"_postman_id": "b3f3b9c0-1234-5678-abcd-ef0123456789",
-		"name": "SA Práctica 5 - K8s API Gateway",
-		"description": "Colección de pruebas para los microservicios en Kubernetes. Asegúrate de tener corriendo el comando `kubectl port-forward svc/sa-platform-api-gateway 8080:80 -n sa-p5`.",
+		"_postman_id": "c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c",
+		"name": "SA Práctica 5 - K8s API Gateway (Corregida)",
+		"description": "Contratos de los microservicios, ajustados a los endpoints reales.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -10,34 +10,22 @@
 			"name": "Auth Service",
 			"item": [
 				{
-					"name": "Test Authorize (Admin)",
+					"name": "Authorize (REST)",
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{ "key": "Content-Type", "value": "application/json" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"role\": \"Admin\",\n    \"path\": \"/api/ruta1\"\n}"
+							"raw": "{\n  \"role\": \"Admin\",\n  \"path\": \"/api/ruta1\"\n}"
 						},
 						"url": {
 							"raw": "http://127.0.0.1:8080/api/auth/authorize",
 							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
+							"host": [ "127", "0", "0", "1" ],
 							"port": "8080",
-							"path": [
-								"api",
-								"auth",
-								"authorize"
-							]
+							"path": [ "api", "auth", "authorize" ]
 						}
 					}
 				}
@@ -47,58 +35,36 @@
 			"name": "Transaction Service",
 			"item": [
 				{
-					"name": "Test Upload",
+					"name": "Upload CSV (REST)",
 					"request": {
-						"method": "GET",
+						"method": "POST",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
 						"url": {
 							"raw": "http://127.0.0.1:8080/api/transactions/upload",
 							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
+							"host": [ "127", "0", "0", "1" ],
 							"port": "8080",
-							"path": [
-								"api",
-								"transactions",
-								"upload"
-							]
+							"path": [ "api", "transactions", "upload" ]
 						}
 					}
 				},
 				{
-					"name": "GraphQL Transactions",
+					"name": "Get Batch Status (GraphQL)",
 					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "graphql",
-							"graphql": {
-								"query": "query {\n  # Cambia esto por tu query real\n  transactions {\n    id\n  }\n}",
-								"variables": ""
-							}
-						},
+						"method": "GET",
+						"header": [],
 						"url": {
-							"raw": "http://127.0.0.1:8080/graphql/transactions",
+							"raw": "http://127.0.0.1:8080/graphql/transactions?query={batchStatus(batchId:\"batch-123\")}",
 							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
+							"host": [ "127", "0", "0", "1" ],
 							"port": "8080",
-							"path": [
-								"graphql",
-								"transactions"
+							"path": [ "graphql", "transactions" ],
+							"query": [
+								{ "key": "query", "value": "{batchStatus(batchId:\"batch-123\")}" }
 							]
 						}
 					}
@@ -109,57 +75,38 @@
 			"name": "Approval Service",
 			"item": [
 				{
-					"name": "Test Approvals",
+					"name": "Approve Batch (REST)",
 					"request": {
-						"method": "GET",
-						"header": [],
+						"method": "POST",
+						"header": [
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"Checker\"\n}"
+						},
 						"url": {
-							"raw": "http://127.0.0.1:8080/api/approvals",
+							"raw": "http://127.0.0.1:8080/api/approvals/batch-123",
 							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
+							"host": [ "127", "0", "0", "1" ],
 							"port": "8080",
-							"path": [
-								"api",
-								"approvals"
-							]
+							"path": [ "api", "approvals", "batch-123" ]
 						}
 					}
 				},
 				{
-					"name": "GraphQL Approvals",
+					"name": "Get Workflow (GraphQL)",
 					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "graphql",
-							"graphql": {
-								"query": "query {\n  # Cambia esto por tu query real\n  approvals {\n    id\n  }\n}",
-								"variables": ""
-							}
-						},
+						"method": "GET",
+						"header": [],
 						"url": {
-							"raw": "http://127.0.0.1:8080/graphql/approvals",
+							"raw": "http://127.0.0.1:8080/graphql/approvals?query={getWorkflow(batchId:\"batch-123\"){batchId,status}}",
 							"protocol": "http",
-							"host": [
-								"127",
-								"0",
-								"0",
-								"1"
-							],
+							"host": [ "127", "0", "0", "1" ],
 							"port": "8080",
-							"path": [
-								"graphql",
-								"approvals"
+							"path": [ "graphql", "approvals" ],
+							"query": [
+								{ "key": "query", "value": "{getWorkflow(batchId:\"batch-123\"){batchId,status}}" }
 							]
 						}
 					}

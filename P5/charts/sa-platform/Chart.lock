@@ -1,7 +1,4 @@
 dependencies:
-- name: rabbitmq
-  repository: https://charts.bitnami.com/bitnami
-  version: 16.0.14
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 18.8.13
@@ -20,5 +17,5 @@ dependencies:
 - name: microservice
   repository: file://./charts/microservice
   version: 1.0.0
-digest: sha256:575e1a77aa99953730323308ba9ef58f522a162f01355f024c2c2653f89207b0
-generated: "2026-08-28T20:39:24.8795845-06:00"
+digest: sha256:2a53fbe7ba218f947da0dd6f4a0cfe4caeb3fda37dbe4e1394fda9cfd4b6f24e
+generated: "2026-08-29T07:25:13.6045496-06:00"

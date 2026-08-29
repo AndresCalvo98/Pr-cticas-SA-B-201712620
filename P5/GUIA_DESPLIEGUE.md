@@ -110,44 +110,18 @@ Verás que automáticamente se crean nuevos pods para llegar a las 2 réplicas m
 ## PASO 7: Pruebas de Estrés (Autoescalado HPA con K6)
 **¿Qué decirle al auxiliar?** *"Para probar el autoescalado, crearé un Pod efímero dentro del clúster inyectándole mi script de K6. Así atacaremos el API Gateway directamente desde adentro para generar carga de CPU."*
 
-**1. Inyecta el script de pruebas en Kubernetes:**
+**A. Inyecta el script de pruebas en Kubernetes:**
 ```powershell
 kubectl create configmap k6-script --from-file=load-test.js=scripts/load-test.js -n sa-p5
 ```
 
-**2. Ejecuta el ataque (Copia todo este bloque y pégalo):**
+**B. Ejecuta el ataque usando el manifiesto ya preparado:**
 ```powershell
-kubectl run k6-test --image=grafana/k6 --restart=Never -n sa-p5 --overrides='
-{
-  "apiVersion": "v1",
-  "spec": {
-    "containers": [
-      {
-        "name": "k6",
-        "image": "grafana/k6",
-        "command": ["k6", "run", "/scripts/load-test.js"],
-        "volumeMounts": [
-          {
-            "name": "script-volume",
-            "mountPath": "/scripts"
-          }
-        ]
-      }
-    ],
-    "volumes": [
-      {
-        "name": "script-volume",
-        "configMap": {
-          "name": "k6-script"
-        }
-      }
-    ]
-  }
-}
-'
+# Lanzar el pod temporal con K6 (forzando su recreación si ya existía)
+kubectl replace --force -f scripts/k6-pod.yaml -n sa-p5
 ```
 
-**3. Observa cómo escala el sistema:**
+**C. Observa cómo escala el sistema:**
 ```powershell
 kubectl get hpa -n sa-p5 -w
 ```
@@ -159,8 +133,11 @@ kubectl get hpa -n sa-p5 -w
 **¿Qué decirle al auxiliar?** *"Si la versión de producción tuviera un fallo crítico, Kubernetes con Helm nos permite volver a la versión exacta de desarrollo al instante."*
 
 ```powershell
-# Regresar a la revisión número 1 (Desarrollo)
-helm rollback sa-platform 1 -n sa-p5
+# 1. Eliminar los deployments actuales para liberar el control que tomó el HPA
+kubectl delete deployment --all -n sa-p5
+
+# 2. Aplicar la configuración de Desarrollo (Equivalente al Rollback en Helm 3)
+helm upgrade sa-platform ./charts/sa-platform -f ./charts/sa-platform/values-dev.yaml -f secrets-values.yaml --namespace sa-p5
 ```
 
 ---
