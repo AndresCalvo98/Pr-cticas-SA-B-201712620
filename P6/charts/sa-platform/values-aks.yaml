@@ -1,0 +1,68 @@
+# values-aks.yaml
+# Entorno de Producción en AKS (Azure)
+
+# Configuración Global
+global:
+  registry: acrsap6andres.azurecr.io
+
+# API Gateway
+api-gateway:
+  replicaCount: 2
+  image:
+    repository: acrsap6andres.azurecr.io/api-gateway
+    tag: latest
+    pullPolicy: Always
+
+# Auth Service
+auth-service:
+  replicaCount: 2
+  image:
+    repository: acrsap6andres.azurecr.io/auth-service
+    tag: latest
+    pullPolicy: Always
+
+# Transaction Service
+transaction-service:
+  replicaCount: 2
+  image:
+    repository: acrsap6andres.azurecr.io/transaction-service
+    tag: latest
+    pullPolicy: Always
+
+# Approval Service
+approval-service:
+  replicaCount: 2
+  image:
+    repository: acrsap6andres.azurecr.io/approval-service
+    tag: latest
+    pullPolicy: Always
+
+# Notification Service
+notification-service:
+  replicaCount: 2
+  image:
+    repository: acrsap6andres.azurecr.io/notification-service
+    tag: latest
+    pullPolicy: Always
+
+# Configuración de los CronJobs
+cronjobs:
+  insertDb:
+    image:
+      repository: acrsap6andres.azurecr.io/cronjob-insert-db
+      tag: latest
+      pullPolicy: Always
+  summaryBroker:
+    image:
+      repository: acrsap6andres.azurecr.io/cronjob-summary-broker
+      tag: latest
+      pullPolicy: Always
+
+# Persistencia de Postgres (Usará los discos Managed-CSI por defecto de AKS)
+postgresql:
+  image:
+    tag: latest
+  primary:
+    persistence:
+      size: 1Gi
+      # No especificamos storageClass para que Azure asigne su default

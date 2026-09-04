@@ -56,18 +56,35 @@ El plato fuerte de la práctica. Vamos a saturar el sistema.
    ```
 3. **¿Qué explicarle?** *"Lancé un Pod temporal dentro de Kubernetes con un script de K6 para bombardear el API Gateway. El HPA está configurado para escalar si la CPU pasa del 70%. Como ven, la CPU llegó al X%, y Kubernetes automáticamente subió las réplicas de 2 a 3/4 pods para soportar la carga."*
 
-### 5. Rollback de Emergencia (2 Minutos)
-Demuestra resiliencia volviendo al estado original.
+### 5. Demostración de Tareas en Segundo Plano (CronJobs) (2 Minutos)
+Esta parte demuestra que tienes trabajos independientes ejecutándose en el clúster.
 
-1. Apaga los deployments para soltar el bloqueo de Kubernetes SSA:
+1. Muestra la lista de CronJobs configurados:
+   ```powershell
+   kubectl get cronjobs -n sa-p5
+   ```
+2. Muestra que los CronJobs han dejado pods en estado "Completed":
+   ```powershell
+   kubectl get pods -n sa-p5
+   ```
+3. Conéctate a la Base de Datos para demostrar que el CronJob "insert-db" realmente guardó los datos:
+   ```powershell
+   kubectl exec -i sa-platform-postgresql-0 -n sa-p5 -- env PGPASSWORD=123456 psql -U AndresCalvo -d transacciones -c "SELECT * FROM cron_logs ORDER BY executed_at DESC LIMIT 5;"
+   ```
+4. **¿Qué explicarle?** *"Como pueden ver, no solo respondemos a peticiones HTTP. Tenemos CronJobs nativos de Kubernetes que cada 2 minutos (por ejemplo) despiertan, ejecutan un script, insertan un registro con mi carné en la Base de Datos o publican en RabbitMQ, y luego se destruyen solos (estado Completed) para no gastar memoria."*
+
+### 6. Rollback / Regreso a Desarrollo (2 Minutos)
+Simularemos que queremos regresar el ambiente a 1 sola réplica sin interrumpir Kubernetes.
+
+1. Elimina los deployments para liberar el "Candado" que puso el Autoescalador:
    ```powershell
    kubectl delete deployment --all -n sa-p5
    ```
-2. Aplica el downgrade a Desarrollo:
+2. Regresa a la versión de Desarrollo usando Helm:
    ```powershell
    helm upgrade sa-platform ./charts/sa-platform -f ./charts/sa-platform/values-dev.yaml -f secrets-values.yaml --namespace sa-p5
    ```
-3. **¿Qué explicarle?** *"Simulemos que Producción falló. Borramos los deployments y reaplicamos la configuración de Desarrollo. En cuestión de segundos, volvimos exactamente al estado original de 1 sola réplica. El sistema es totalmente resiliente."*
+3. **¿Qué explicarle?** *"Si algo sale mal en Producción o termina nuestro horario pico, gracias a Helm podemos inyectar de vuelta el archivo de desarrollo y Kubernetes apaga la Alta Disponibilidad, regresando el clúster a 1 sola réplica limpia. El sistema es totalmente resiliente."*
 
 ---
 **Nota:** Al terminar tu calificación, ahora sí puedes correr el **Paso 9** de la `GUIA_DESPLIEGUE.md` (`helm uninstall...`) para apagar todo y liberar la RAM de tu computadora.

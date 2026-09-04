@@ -58,5 +58,9 @@ Este documento mapea **exactamente** los puntos de tu rúbrica de calificación 
 * **Qué mostrar/decir:** *"Tengo un HPA configurado al 70% de CPU."* Lanza el ataque con `kubectl replace --force -f scripts/k6-pod.yaml -n sa-p5`, deja abierta la terminal con `kubectl get hpa -n sa-p5 -w` y muéstrale cómo los pods suben de 2 a 4 cuando la CPU sobrepasa el límite.
 
 ### 2.6 Cronjobs encadenados y funcionales (6 pts)
-* **Dónde está:** Terminal (`kubectl get cronjobs -n sa-p5`).
-* **Qué mostrar/decir:** Corre ese comando y muéstrale que tienes tareas programadas. *"Configuré dos CronJobs. El primero se levanta cada X tiempo e inserta registros directo a la BD. El segundo lee esos datos y avienta un resumen estadístico al broker RabbitMQ. Una vez que terminan su código, Kubernetes destruye el contenedor para no gastar RAM inútilmente (quedan en estado Completed)."*
+* **Dónde está:** Terminal (Siguiendo el Paso 5 del `GUION_PRESENTACION.md`).
+* **Qué mostrar/decir:**
+  1. Corre `kubectl get cronjobs -n sa-p5` para mostrar la configuración y programación.
+  2. Corre la consulta SQL directo en el pod de Postgres para demostrar que los datos sí entraron:
+     `kubectl exec -i sa-platform-postgresql-0 -n sa-p5 -- env PGPASSWORD=123456 psql -U AndresCalvo -d transacciones -c "SELECT * FROM cron_logs ORDER BY executed_at DESC LIMIT 5;"`
+  3. *"Configuré dos CronJobs. El primero despierta, ejecuta un script e inserta un registro con mi carné en la Base de Datos. El segundo lee esos datos y avienta un resumen al broker RabbitMQ. Una vez que terminan su código, Kubernetes destruye el contenedor (quedan en estado Completed) para ahorrar recursos."*

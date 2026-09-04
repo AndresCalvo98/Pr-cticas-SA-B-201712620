@@ -1,0 +1,21 @@
+dependencies:
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 18.8.13
+- name: microservice
+  repository: file://./charts/microservice
+  version: 1.0.0
+- name: microservice
+  repository: file://./charts/microservice
+  version: 1.0.0
+- name: microservice
+  repository: file://./charts/microservice
+  version: 1.0.0
+- name: microservice
+  repository: file://./charts/microservice
+  version: 1.0.0
+- name: microservice
+  repository: file://./charts/microservice
+  version: 1.0.0
+digest: sha256:2a53fbe7ba218f947da0dd6f4a0cfe4caeb3fda37dbe4e1394fda9cfd4b6f24e
+generated: "2026-08-29T07:25:13.6045496-06:00"

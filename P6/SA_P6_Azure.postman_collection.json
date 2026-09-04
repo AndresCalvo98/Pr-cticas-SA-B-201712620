@@ -1,0 +1,155 @@
+{
+	"info": {
+		"_postman_id": "f51b630e-c4ba-4bc0-bbcc-04f7626b9f1d",
+		"name": "Práctica 6 - Azure AKS",
+		"description": "Colección corregida para probar los microservicios desplegados en Azure AKS.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth Service (Autorización)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"role\": \"Admin\",\r\n    \"path\": \"/api/ruta1\"\r\n}"
+				},
+				"url": {
+					"raw": "http://135.234.193.198/api/auth/authorize",
+					"protocol": "http",
+					"host": [
+						"135.234.193",
+						"198"
+					],
+					"path": [
+						"api",
+						"auth",
+						"authorize"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Transaction Service (REST Upload CSV)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://135.234.193.198/api/transactions/upload",
+					"protocol": "http",
+					"host": [
+						"135.234.193",
+						"198"
+					],
+					"path": [
+						"api",
+						"transactions",
+						"upload"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Transaction Service (GraphQL Introspection)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "graphql",
+					"graphql": {
+						"query": "query {\n  __schema {\n    types {\n      name\n    }\n  }\n}",
+						"variables": ""
+					}
+				},
+				"url": {
+					"raw": "http://135.234.193.198/graphql/transactions",
+					"protocol": "http",
+					"host": [
+						"135.234.193",
+						"198"
+					],
+					"path": [
+						"graphql",
+						"transactions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Approval Service (REST Aprobar Batch)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"role\": \"Checker\"\r\n}"
+				},
+				"url": {
+					"raw": "http://135.234.193.198/api/approvals/batch-123",
+					"protocol": "http",
+					"host": [
+						"135.234.193",
+						"198"
+					],
+					"path": [
+						"api",
+						"approvals",
+						"batch-123"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Approval Service (GraphQL Introspection)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "graphql",
+					"graphql": {
+						"query": "query {\n  __schema {\n    types {\n      name\n    }\n  }\n}",
+						"variables": ""
+					}
+				},
+				"url": {
+					"raw": "http://135.234.193.198/graphql/approvals",
+					"protocol": "http",
+					"host": [
+						"135.234.193",
+						"198"
+					],
+					"path": [
+						"graphql",
+						"approvals"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -1,0 +1,33 @@
+# Entorno de desarrollo
+api-gateway:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+
+auth-service:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+
+transaction-service:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+
+approval-service:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+
+notification-service:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+
+postgresql:
+  image:
+    tag: latest
+  primary:
+    persistence:
+      size: 1Gi
+

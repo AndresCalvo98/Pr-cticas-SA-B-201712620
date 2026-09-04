@@ -1,0 +1,8 @@
+# Secrets y Credenciales
+secrets-values.yaml
+
+# Node y dependencias
+node_modules/
+
+# Mac / OS
+.DS_Store
