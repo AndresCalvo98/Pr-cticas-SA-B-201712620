@@ -65,30 +65,66 @@ graph TD
         
         ArgoCD -->|Sync continuo| GitOpsRepo
         ArgoCD -->|Aplica manifiestos| RolloutAPI
-        ArgoCD -->|Aplica manifiestos| RolloutAuth
-        ArgoCD -->|Aplica manifiestos| RolloutApproval
-        ArgoCD -->|Aplica manifiestos| RabbitMQ
-        
-        RolloutAPI -->|Pull Image| GHCR
-        RolloutAuth -->|Pull Image| GHCR
+graph LR
+    %% Definición de repositorios
+    Developer((Desarrollador))
+    RepoApp[fa:fa-github Repositorio Código<br/>(App Práctica)]
+    RepoGitOps[fa:fa-github Repositorio GitOps<br/>(Manifiestos)]
+
+    %% Pipeline CI
+    subgraph Pipeline CI [Github Actions]
+        direction TB
+        Build(Build Imagen Docker)
+        Scan(Trivy Vulnerability Scan)
+        Sign(Cosign Sign)
+        Push[(Push GHCR)]
+        Update(Update Helm Values)
     end
+
+    %% GitOps y CD
+    subgraph Pipeline CD [Clúster Kubernetes]
+        direction TB
+        Argo[ArgoCD Controller]
+        Rollout[Argo Rollouts]
+        Pods((Nuevos Pods Canary))
+    end
+
+    %% Flujo Integración
+    Developer -->|1. Push de código| RepoApp
+    RepoApp -->|2. Trigger Workflow| Build
+    Build -->|3. Escaneo de seguridad| Scan
+    Scan -->|4. Firma digital| Sign
+    Sign -->|5. Sube imagen| Push
+    Push -->|6. Actualiza versión| Update
+    Update -->|7. Push auto| RepoGitOps
+
+    %% Flujo GitOps
+    RepoGitOps -->|8. Reconciliación| Argo
+    Argo -->|9. Aplica estado| Rollout
+    Rollout -->|10. Inicia Canary| Pods
 ```
 
 ## 1.3 Informe de Incidente
-**Incidente**: Falla simulada durante un despliegue Canary (`fake-fail`).
-**Causa raíz**: Durante el despliegue del Rollout en fase de Canary, se inyectó una falla sintética a través de un `AnalysisRun` que simulaba una tasa de error inaceptable (mayor al 5%). El controlador de Argo Rollouts evaluó las métricas de la nueva versión (Canary) y determinó que superaba el umbral permitido establecido en el `AnalysisTemplate`.
-**Solución/Resolución automática**: Argo Rollouts detectó el fallo del AnalysisRun y automáticamente abortó el despliegue de la nueva versión. Inmediatamente ejecutó un "rollback", enrutando el 100% del tráfico de regreso a la versión estable anterior sin impacto permanente en el ambiente de producción. Se corrigió el error en el código fuente, se construyó una nueva imagen limpia, y GitOps (Argo CD) desplegó exitosamente la versión corregida.
+
+**¿Qué pasó?**
+Durante las pruebas de nuestro despliegue progresivo (Canary), introdujimos un fallo a propósito (el `fake-fail`) para evaluar cómo reaccionaba el clúster ante una actualización defectuosa. La intención era simular que la nueva versión estaba fallando en producción.
+
+**Causa de la falla**: 
+Mientras el Rollout estaba en su fase Canary (donde solo un pequeño porcentaje del tráfico es enviado a la nueva versión), el `AnalysisRun` empezó a monitorear las métricas de salud. Al inyectar la falla sintética, la tasa de error subió drásticamente por encima del 5%, que era el límite máximo que habíamos configurado en el `AnalysisTemplate`.
+
+**¿Cómo se resolvió automáticamente?**: 
+Aquí es donde entró en acción la resiliencia de Argo Rollouts. Al detectar que las métricas del `AnalysisRun` fallaron, el controlador detuvo automáticamente el avance del Canary y abortó el despliegue completo. De inmediato ejecutó un *rollback*, redireccionando el 100% del tráfico de regreso a los pods de la versión anterior (estable). Gracias a esto, la aplicación en producción no sufrió una caída masiva. Posteriormente, simplemente corregimos el error en nuestro repositorio de código, el pipeline generó una nueva imagen sana, y Argo CD desplegó la versión arreglada sin inconvenientes.
 
 ## 1.4 Preguntas Teóricas
 
 **1. ¿Qué ventajas ofrece GitOps respecto a las metodologías de despliegue tradicionales?**
-GitOps ofrece como principal ventaja el uso de un repositorio Git como la "única fuente de verdad" para la infraestructura y las aplicaciones. Esto permite una trazabilidad completa, auditoría y control de versiones de todos los cambios. Además, automatiza la convergencia del estado deseado (Git) con el estado actual (Cluster), permitiendo reversiones (rollbacks) rápidas y mejorando la seguridad, ya que los agentes de despliegue operan dentro del cluster de forma pull-based, en lugar de exponer credenciales externamente a pipelines CI push-based.
+Lo que más destaco de GitOps es que Git se convierte en la "única fuente de verdad". Si alguien borra algo por error dentro del clúster, la herramienta (ArgoCD) lo vuelve a crear tal cual está en el repositorio. Además, a diferencia de los pipelines tradicionales donde Jenkins o Github Actions tienen que tener permisos para conectarse al clúster (estrategia *Push*), en GitOps es el clúster el que consulta al repositorio y "hala" los cambios (estrategia *Pull*). Esto es mucho más seguro porque no exponemos las credenciales de nuestro clúster en internet.
 
 **2. Describa cómo funciona el ciclo de reconciliación en herramientas como ArgoCD.**
-El ciclo de reconciliación es un bucle continuo ejecutado por el Application Controller que monitorea el estado deseado en Git y el estado en vivo (live state) en el clúster. Si hay una discrepancia (OutOfSync), ArgoCD puede aplicar automáticamente los cambios necesarios o alertar al usuario para que sincronice manualmente, de modo que el clúster coincida con lo definido en Git. Este bucle se ejecuta de manera periódica o se dispara inmediatamente mediante webhooks.
+Básicamente, el controlador de Argo CD está revisando constantemente (en un bucle infinito) el estado real de los recursos dentro de Kubernetes versus cómo dicen los archivos en el repositorio de Git que deberían estar. Si nota que hay alguna diferencia (por ejemplo, si cambiamos la etiqueta de una imagen en Git), marca la aplicación en estado "Out of Sync" y procede a aplicar esos cambios en el clúster para que vuelva a estar idéntico a lo que declaramos en el código.
 
 **3. ¿Cuál es el propósito principal de implementar estrategias como Canary o Blue-Green?**
-El propósito es mitigar los riesgos asociados a lanzar nuevas versiones en producción. Blue-Green permite probar una nueva versión (Green) de forma aislada pero completa antes de redirigir todo el tráfico, eliminando tiempos de inactividad. Canary despliega progresivamente la versión, dirigiendo solo un pequeño porcentaje del tráfico inicialmente para validar estabilidad, latencia y errores; si algo falla, el impacto se limita a unos pocos usuarios y el rollback es inmediato.
+El propósito central es minimizar el riesgo al momento de sacar nuevas versiones a producción y no causar caídas en el sistema. Con *Blue-Green*, se levanta un ambiente completamente nuevo y paralelo al viejo; se prueba a fondo, y si todo está bien, se cambia el tráfico de un solo golpe, logrando cero tiempo de inactividad (zero downtime). Con *Canary*, el enfoque es más progresivo: enviamos primero un porcentaje pequeño del tráfico (ej. 10%) a los nuevos pods para ver cómo se comportan en el mundo real. Si todo sale bien, vamos aumentando el porcentaje. Si algo falla, el impacto afecta a muy pocos usuarios y el rollback es inmediato.
 
 **4. ¿Por qué es importante firmar las imágenes y escanearlas en el flujo de CI/CD?**
-La firma de imágenes (ej. Cosign) garantiza la proveniencia e integridad, previniendo que imágenes manipuladas, inyectadas o no autorizadas sean desplegadas en producción, protegiendo así contra ataques a la cadena de suministro de software (Supply Chain Security). El escaneo de imágenes (ej. Trivy) detecta vulnerabilidades de seguridad conocidas (CVEs) en capas base o librerías antes de su despliegue, aplicando "shift-left security" para asegurar el software desde las primeras etapas.
+Es fundamental por el concepto de "Seguridad en la Cadena de Suministro" (Supply Chain Security). Al escanear nuestras imágenes con herramientas como *Trivy*, nos aseguramos de no subir a producción contenedores que tengan vulnerabilidades conocidas (CVEs) o librerías desactualizadas que un atacante pueda explotar. Por otro lado, la firma digital con *Cosign* nos sirve para garantizar integridad: aseguramos que la imagen que ArgoCD está desplegando realmente fue construida por nuestro pipeline oficial y nadie la interceptó ni la alteró en el camino hacia el Container Registry, aplicando "shift-left security" para asegurar el software desde las primeras etapas.
