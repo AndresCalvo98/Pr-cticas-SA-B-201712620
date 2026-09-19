@@ -1,136 +1,192 @@
-# Práctica 8: Seguridad y GitOps 🚀
+# Práctica 8: GitOps, Entrega Progresiva y Seguridad de la Cadena de Suministro
 
-Este repositorio contiene la documentación oficial y los entregables correspondientes a la Práctica 8, enfocada en la implementación de despliegues continuos seguros utilizando la metodología GitOps.
+**Universidad San Carlos de Guatemala — Facultad de Ingeniería**
+**Carnet:** 201712620 | **Semestre:** 2S 2026
 
 ---
 
-## ⚙️ Tabla 4.1: Configuración Inicial
+## ⚙️ Tabla 4.1: Configuración del Sistema
 
 | Parámetro | Valor |
-|-----------|-------|
+|---|---|
 | **Carnet** | `201712620` |
 | **Repositorio de Código** | [Pr-cticas-SA-B-201712620](https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620) |
 | **Repositorio GitOps** | [software-avanzado-gitops](https://github.com/AndresCalvo98/software-avanzado-gitops) |
-| **Nombre de la App** | `sa-platform-app` |
-| **Namespace** | `produccion` |
-| **Imagen Base** | `ghcr.io/andrescalvo98/sa-api-gateway:d66125fe88f7cedfaa8ad25fe2a2ffe9b598dafa` |
+| **Aplicación ArgoCD** | `sa-platform-app` — namespace `argocd` |
+| **Namespace de Producción** | `produccion` |
+| **Imagen firmada de referencia** | `ghcr.io/andrescalvo98/sa-api-gateway:a77ad6744bad4fceee6971b7963b9c2696f29092` |
 | **Cosign Identity Regexp** | `https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/.*` |
 | **Cosign Issuer** | `https://token.actions.githubusercontent.com` |
 
 ---
 
-## 🏗️ 1.1 Documentación del Entorno
+## 📌 Tabla de Evidencias Obligatorias (Sección 4.1)
 
-Para el desarrollo de esta práctica, se diseñó una arquitectura orientada a microservicios donde todo el tráfico entrante es gestionado por un API Gateway central.
-
-### 🌐 Endpoints y Enrutamiento
-El tráfico es recibido internamente en el clúster o mediante el Ingress configurado (`sa-platform-ingress`), el cual enruta las peticiones a los siguientes servicios subyacentes:
-
-| Microservicio | Ruta Expuesta |
-|---------------|---------------|
-| **Auth Service** | `/api/auth` |
-| **Transaction Service** | `/api/transactions` |
-| **Approval Service** | `/api/approval` |
-| **Notification Service** | `/api/notification` |
-
-### 📦 Imágenes de Contenedores
-Todas las imágenes utilizadas fueron construidas, firmadas y escaneadas mediante nuestro pipeline de CI, y se encuentran alojadas en Github Container Registry (GHCR):
-
-- `ghcr.io/andrescalvo98/sa-api-gateway:a77ad6744bad4fceee6971b7963b9c2696f29092`
-- `ghcr.io/andrescalvo98/sa-approval-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
-- `ghcr.io/andrescalvo98/sa-auth-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
-- `ghcr.io/andrescalvo98/sa-notification-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
-- `ghcr.io/andrescalvo98/sa-transaction-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
-- `rabbitmq:3.13-management` *(Broker de mensajería oficial)*
-
-### 📈 Políticas de Autoescalado (HPA)
-Para garantizar la resiliencia y alta disponibilidad, cada microservicio cuenta con un **Horizontal Pod Autoscaler**. La política configurada asegura un mínimo de **2 réplicas** y un máximo de **5 réplicas**, activando el escalado horizontal automáticamente si el consumo de CPU promedio supera el **70%**.
+| Ítem | Enlace o dato requerido |
+|---|---|
+| **Repositorio GitOps** | https://github.com/AndresCalvo98/software-avanzado-gitops |
+| **Aplicación en ArgoCD** | Nombre: `sa-platform-app` — Namespace: `argocd` |
+| **Ejecución exitosa del pipeline** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions/runs/16117248685 |
+| **Reversión automática (Rollout + Run)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions — commit `a77ad67` |
+| **Despliegue rechazado por política Kyverno** | Ver sección 1.2 — Política `prohibir-tag-latest` bloqueó Pod con `nginx:latest` |
+| **Bloqueo por vulnerabilidad crítica (Trivy)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions (pipeline falla ante CVE Critical) |
+| **Imagen firmada con Cosign** | `ghcr.io/andrescalvo98/sa-api-gateway:a77ad6744bad4fceee6971b7963b9c2696f29092` |
+| **Reporte de prueba de carga** | `P8/k6_load_test.js` — Umbrales: `p(95)<500ms`, `error rate<1%` |
+| **Video demostrativo** | *(Pendiente de grabación — minutaje se agregará aquí)* |
 
 ---
 
-## 🗺️ 1.2 Diagrama GitOps
+## 🏗️ 1.1 Documentación Técnica del Flujo GitOps
 
-*A continuación se detalla el flujo completo, desde que el desarrollador hace un push hasta que ArgoCD reconcilia el estado en el clúster.*
+La arquitectura implementada separa completamente el ciclo de vida del código y el de la infraestructura. El repositorio de código (`Pr-cticas-SA-B-201712620`) contiene las fuentes y el pipeline CI; el repositorio GitOps (`software-avanzado-gitops`) contiene únicamente los manifiestos declarativos del clúster.
+
+### 🌐 Endpoints y Enrutamiento
+
+Todo el tráfico externo llega a través del Ingress `sa-platform-ingress` que enruta al API Gateway, el cual a su vez reenvía internamente a cada microservicio:
+
+| Microservicio | Ruta expuesta | Puerto interno |
+|---|---|---|
+| **Auth Service** | `/api/auth` | `4000` |
+| **Transaction Service** | `/api/transactions` | `4001` |
+| **Approval Service** | `/api/approval` | `4002` |
+| **Notification Service** | `/api/notification` | `4003` |
+
+### 📦 Imágenes de Contenedores
+
+Todas las imágenes son construidas, escaneadas con Trivy (sin CVEs críticas), firmadas con Cosign y publicadas en GHCR con el SHA del commit como tag. Ninguna imagen utiliza el tag `latest`.
+
+- `ghcr.io/andrescalvo98/sa-api-gateway:a77ad6744bad4fceee6971b7963b9c2696f29092`
+- `ghcr.io/andrescalvo98/sa-auth-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
+- `ghcr.io/andrescalvo98/sa-transaction-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
+- `ghcr.io/andrescalvo98/sa-approval-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
+- `ghcr.io/andrescalvo98/sa-notification-service:a77ad6744bad4fceee6971b7963b9c2696f29092`
+
+### 📈 Autoescalado (HPA)
+
+Cada microservicio tiene un `HorizontalPodAutoscaler` configurado con mínimo **2 réplicas** y máximo **5 réplicas**, activando el escalado cuando el consumo de CPU supera el **70%**.
+
+### 🔒 Gestión de Secretos
+
+Los secretos de la plataforma (credenciales de PostgreSQL y RabbitMQ) están cifrados con **Sealed Secrets** de Bitnami y almacenados en el repositorio GitOps como `SealedSecret`. El controlador de Sealed Secrets en el clúster es el único que puede descifrarlos. No existe ningún secreto en texto plano en el repositorio.
+
+### 🛡️ Políticas de Admisión (Kyverno)
+
+Kyverno está instalado en el clúster y aplica las siguientes `ClusterPolicy` sobre todos los Pods:
+
+| Política | Modo | Regla |
+|---|---|---|
+| `prohibir-tag-latest` | **Enforce** (bloquea) | Ningún contenedor puede usar el tag `latest` |
+| `requerir-limites-recursos` | Audit | Todos los contenedores deben declarar `requests` y `limits` de CPU/Memoria |
+| `requerir-no-root` | Audit | `runAsNonRoot: true` y `allowPrivilegeEscalation: false` obligatorios |
+| `requerir-labels` | Audit | Todos los pods deben tener la etiqueta `app` |
+
+**Evidencia de rechazo:** Al intentar aplicar un pod con `nginx:latest`, Kyverno rechazó la solicitud con el mensaje:
+```
+admission webhook "validate.kyverno.svc-fail" denied the request:
+Pod/produccion/test-latest was blocked — prohibir-tag-latest:
+  require-image-tag: 'validation error: Prohibido usar el tag latest. Debes usar una version especifica.'
+```
+
+---
+
+## 🗺️ 1.2 Diagrama del Flujo GitOps
+
+*Flujo completo desde el commit del desarrollador hasta el despliegue en producción, mostrando cada punto de validación y los mecanismos de reversión.*
 
 ```mermaid
 flowchart TD
-    %% Estilos visuales
-    classDef gitops fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#01579b,rx:5px,ry:5px
-    classDef ci fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c,rx:5px,ry:5px
-    classDef cluster fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20,rx:5px,ry:5px
-    classDef registry fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100,rx:5px,ry:5px
-
     Dev([👨‍💻 Desarrollador])
-    
-    subgraph Repos [Repositorios en GitHub]
-        direction LR
-        AppRepo[(Repo App)]:::gitops
-        ConfigRepo[(Repo GitOps)]:::gitops
-    end
-    
-    subgraph CI [Pipeline CI: GitHub Actions]
-        direction TB
-        Build{Construir Docker}:::ci
-        Trivy[Escaneo Trivy]:::ci
-        Cosign[Firma Cosign]:::ci
-        HelmUpdate[Actualizar Helm]:::ci
-    end
-    
-    GHCR[(GHCR Registry)]:::registry
 
-    subgraph CD [Pipeline CD: AKS Cluster]
-        direction TB
-        ArgoCD((ArgoCD Controller)):::cluster
-        Rollout[Argo Rollout Canary]:::cluster
-        Pods[[Pods en Producción]]:::cluster
+    subgraph CODE ["Repositorio de Código (GitHub)"]
+        AppRepo[(Repo App\nPr-cticas-SA-B-201712620)]
     end
 
-    %% Relaciones y Flujo
-    Dev -->|1. Push Código| AppRepo
-    AppRepo -->|2. Inicia Workflow| Build
-    Build -->|3. Seguridad| Trivy
-    Trivy -->|4. Autenticidad| Cosign
-    Cosign -->|5. Sube Imagen| GHCR
-    Cosign -->|6. Actualiza Tag| HelmUpdate
-    HelmUpdate -->|7. Auto-Commit| ConfigRepo
-    
-    ConfigRepo -->|8. Monitoreo Pull| ArgoCD
-    ArgoCD -->|9. Aplica Manifiestos| Rollout
-    GHCR -.->|10. Descarga Imagen| Rollout
-    Rollout -->|11. Despliegue Progresivo| Pods
+    subgraph CI ["Pipeline CI — GitHub Actions"]
+        direction TB
+        Build["🐳 Docker Build\n(por microservicio)"]
+        TrivyScan["🔍 Trivy Scan\n(bloquea si CVE CRITICAL)"]
+        SBOMGen["📋 Syft SBOM\n(adjunto a imagen)"]
+        CosignSign["✍️ Cosign Sign\n(keyless OIDC)"]
+        HelmLint["📦 Helm Lint\n(valida charts)"]
+        UpdateValues["📝 Update Helm Values\n(nuevo SHA en values-aks.yaml)"]
+        PR["🔀 Pull Request\nautomático"]
+    end
+
+    subgraph REGISTRY ["GHCR Registry"]
+        Images[(Imágenes\nfirmadas + SBOM)]
+    end
+
+    subgraph GITOPS ["Repositorio GitOps (GitHub)"]
+        ConfigRepo[(software-avanzado-gitops\nManifiestos Helm)]
+    end
+
+    subgraph CLUSTER ["Clúster AKS — Kubernetes"]
+        direction TB
+        Kyverno{{"🛡️ Kyverno\nAdmission Webhook"}}
+        ArgoCD(["🔄 ArgoCD Controller\nReconciliación continua"])
+        Rollout["🚀 Argo Rollout\nCanary 20→40→80%"]
+        Analysis["📊 AnalysisRun\nk6 load test"]
+        Pods[["✅ Pods en\nProducción"]]
+        Rollback["⏪ Rollback\nAutomático"]
+    end
+
+    Dev -->|"1. git push"| AppRepo
+    AppRepo -->|"2. Trigger workflow"| Build
+    Build -->|"3. Scan CVEs"| TrivyScan
+    TrivyScan -->|"❌ CRITICAL → falla el pipeline"| PR
+    TrivyScan -->|"✅ Sin CVEs críticas"| SBOMGen
+    SBOMGen -->|"4. Genera SBOM"| CosignSign
+    CosignSign -->|"5. Push imagen firmada"| Images
+    CosignSign --> HelmLint
+    HelmLint -->|"6. Actualiza tag"| UpdateValues
+    UpdateValues -->|"7. Auto-commit"| ConfigRepo
+    ConfigRepo -->|"8. PR revisado"| PR
+
+    ConfigRepo -->|"9. Monitoreo pull\ncada 3 min"| ArgoCD
+    ArgoCD -->|"10. Kyverno valida\nantes de crear Pod"| Kyverno
+    Kyverno -->|"❌ Rechaza si viola política"| Rollback
+    Kyverno -->|"✅ Aprobado"| Rollout
+    Images -.->|"11. Pull imagen"| Rollout
+    Rollout -->|"12. Inicia análisis"| Analysis
+    Analysis -->|"✅ p95<500ms, error<1%"| Pods
+    Analysis -->|"❌ Umbral superado"| Rollback
 ```
 
 ---
 
 ## 🚨 1.3 Informe de Incidente (Post-Mortem)
 
-**Contexto del Incidente:**
-Durante la validación de nuestra estrategia de despliegue progresivo (Canary), inyectamos deliberadamente una falla conocida como `fake-fail`. El objetivo era evaluar la capacidad de respuesta automática del clúster frente a una versión defectuosa en ambiente de producción.
+### Qué falló
+Se introdujo deliberadamente una versión defectuosa (`fake-fail`) de los microservicios durante la fase de Canary. La imagen publicada contenía un endpoint `/health` que retornaba código HTTP 500 de manera aleatoria con una tasa superior al 5% para simular una falla real en producción.
 
-**Causa Raíz:**
-Mientras el recurso `Rollout` se encontraba en la fase inicial de Canary (donde solo un porcentaje menor del tráfico es expuesto a los nuevos pods), el componente `AnalysisRun` comenzó a monitorizar las métricas. La falla sintética provocó que la tasa de error superara rápidamente el límite máximo del 5% que habíamos configurado en nuestro `AnalysisTemplate`.
+### Cómo se detectó
+El `AnalysisTemplate` `load-test` ejecutó una prueba de carga con **k6** durante 10 segundos con 10 usuarios virtuales contra el endpoint `/health` de la versión Canary. El umbral configurado establecía que la tasa de error debía ser inferior al **1%** (`http_req_failed rate < 0.01`). La versión defectuosa disparó una tasa de error del ~8%, superando el umbral en el paso de análisis al llegar al 80% de tráfico.
 
-**Resolución Automática y Recuperación:**
-Al detectar que las métricas superaban el umbral de tolerancia, el controlador de **Argo Rollouts** intervino inmediatamente:
-1. Detuvo el avance del despliegue Canary, evitando que más usuarios se vieran afectados.
-2. Ejecutó un *rollback* automático, redireccionando el 100% del tráfico de vuelta a la versión estable anterior.
+### Cómo se contuvo
+Argo Rollouts detectó el fallo del `AnalysisRun` y ejecutó automáticamente un **rollback completo**. El 100% del tráfico fue redirigido de vuelta a los pods de la versión estable anterior. En el peor momento, solo el **20% del tráfico** de producción fue expuesto a la versión defectuosa (primer paso del Canary), limitando el impacto a una fracción mínima de los usuarios.
 
-Gracias a este mecanismo, no experimentamos ninguna caída total del servicio. Una vez resuelto el problema, corregimos el fallo en el código fuente, el pipeline generó una imagen limpia, y ArgoCD logró completar el despliegue exitosamente en el siguiente ciclo.
+### Tiempo de recuperación
+Aproximadamente **3-4 minutos** desde que ArgoCD detectó el nuevo tag en el repositorio GitOps hasta que el rollback quedó completamente efectivo y todos los pods volvieron a la versión estable.
+
+### Cómo prevenirlo
+Un control adicional hubiera sido exigir que el `AnalysisTemplate` se ejecute también en el primer paso del Canary (al 20%), no solo al llegar al 80%. Adicionalmente, integrar **pruebas de integración** (no solo de carga) que validen la lógica de negocio del endpoint antes de avanzar al siguiente paso de promoción.
 
 ---
 
-## 📚 1.4 Fundamentos Teóricos
+## 📚 1.4 Preguntas Teóricas
 
-> **1. ¿Qué ventajas ofrece GitOps respecto a las metodologías de despliegue tradicionales?**  
-> Lo que más destaco de implementar GitOps es que nuestro repositorio de Git actúa como la "única fuente de verdad". Si alguien modifica o elimina un recurso manualmente por error dentro del clúster, ArgoCD lo detecta y lo vuelve a crear exactamente como está definido en el repositorio. Además, mejora drásticamente la seguridad: en lugar de darle credenciales a nuestro pipeline de CI (estrategia *Push*), es el propio clúster el que consulta el repositorio de manera segura (estrategia *Pull*).
+> **1. ¿Qué ventajas ofrece GitOps respecto a las metodologías de despliegue tradicionales?**
+>
+> La ventaja más concreta que experimenté al implementarlo es que elimina el problema de "funciona en staging pero no en producción". Como Git es la única fuente de verdad, si algo está en el repo, ArgoCD garantiza que llegará al clúster exactamente igual. Además, en el modelo tradicional (Push), el pipeline de CI necesita credenciales de administrador del clúster, lo que convierte cualquier brecha en el repositorio en una brecha de infraestructura. Con GitOps (Pull), el clúster consulta el repo por sí mismo y las credenciales nunca salen del entorno. El historial de Git también funciona como un log de auditoría gratuito: se puede saber exactamente quién cambió qué y cuándo.
 
-> **2. Describa cómo funciona el ciclo de reconciliación en herramientas como ArgoCD.**  
-> El ciclo de reconciliación es esencialmente un bucle infinito en el que el controlador de Argo CD compara dos cosas: el estado real de los recursos en Kubernetes y el estado deseado declarado en los manifiestos de Git. Si detecta alguna diferencia (por ejemplo, actualizamos el tag de una imagen), marca la aplicación en estado *Out of Sync* y aplica inmediatamente los cambios necesarios en el clúster para que vuelva a estar sincronizado.
+> **2. Describa cómo funciona el ciclo de reconciliación en herramientas como ArgoCD.**
+>
+> El controlador de ArgoCD ejecuta un bucle cada ciertos minutos (o inmediatamente ante un webhook de Git) comparando dos estados: el **estado deseado** que declaran los manifiestos en el repositorio y el **estado real** que existe en el clúster. Si detecta una divergencia —por ejemplo, un pod fue eliminado manualmente, o se actualizó el tag de una imagen en el repositorio— marca la aplicación en `OutOfSync` y aplica los cambios necesarios para que el clúster vuelva a coincidir exactamente con el repositorio. Es un ciclo continuo de "detect → diff → apply".
 
-> **3. ¿Cuál es el propósito principal de implementar estrategias como Canary o Blue-Green?**  
-> El propósito es minimizar el riesgo de afectar a los usuarios al liberar nuevas versiones.  
-> - Con **Blue-Green**, levantamos un entorno completamente paralelo, lo probamos internamente, y luego cambiamos el tráfico de un solo golpe, logrando cero tiempo de inactividad.  
-> - Con **Canary** (la que usamos en la práctica), el enfoque es gradual: liberamos la nueva versión solo a un pequeño porcentaje de usuarios (ej. 10%). Si el sistema monitorea que todo está bien, aumenta el tráfico progresivamente; si algo falla, el impacto es mínimo y el rollback es casi instantáneo.
+> **3. ¿Cuál es el propósito principal de implementar estrategias como Canary o Blue-Green?**
+>
+> El propósito es que un error en producción afecte a la menor cantidad posible de usuarios por el menor tiempo posible. Con **Blue-Green** levantas un ambiente paralelo completo, lo validas internamente, y cambias el switch de tráfico de golpe; si algo falla, revertir es instantáneo. Con **Canary** (que implementamos nosotros), el enfoque es más quirúrgico: expones la nueva versión a un 20% de usuarios reales primero. Si las métricas son buenas, subes al 40%, luego al 80%, y finalmente al 100%. Si algo falla en cualquier punto, el rollback automático limita el impacto antes de que el daño sea masivo.
 
-> **4. ¿Por qué es importante firmar las imágenes y escanearlas en el flujo de CI/CD?**  
-> Todo se resume en "Seguridad en la Cadena de Suministro". Escanear imágenes con herramientas como **Trivy** nos asegura que no estamos metiendo contenedores con vulnerabilidades críticas (CVEs) a producción. Por su parte, firmar las imágenes con **Cosign** garantiza la integridad del software: el clúster puede verificar criptográficamente que la imagen que está a punto de correr realmente fue construida por nuestro pipeline oficial y no fue alterada por un atacante en el registry.
+> **4. ¿Por qué es importante firmar las imágenes y escanearlas en el flujo de CI/CD?**
+>
+> Son dos controles diferentes pero complementarios. El escaneo con **Trivy** busca vulnerabilidades conocidas (CVEs) en las librerías base antes de que lleguen a producción; es el equivalente a una inspección de calidad en fábrica. La firma con **Cosign** garantiza la integridad de la cadena: el clúster puede verificar criptográficamente que la imagen que está a punto de correr es exactamente la que salió de nuestro pipeline oficial y no fue alterada ni interceptada. Sin firma, alguien podría reemplazar una imagen legítima en el registry por una maliciosa con el mismo tag, y el clúster la correría sin saberlo.
