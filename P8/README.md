@@ -32,76 +32,47 @@ Todos los microservicios cuentan con un Horizontal Pod Autoscaler (HPA) configur
 
 ## 1.2 Diagrama
 ```mermaid
-graph TD
+flowchart LR
+    %% Clases de estilo para un look más "pro"
+    classDef gitops fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#01579b
+    classDef ci fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+    classDef cluster fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    classDef ext fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+
+    Dev([Desarrollador])
+    
     subgraph Repositorios
-        GitCode[Repositorio de Código<br/>Pr-cticas-SA-B-201712620]
-        GitOpsRepo[Repositorio GitOps<br/>software-avanzado-gitops]
+        AppRepo[(Repo Código App)]:::gitops
+        ConfigRepo[(Repo GitOps)]:::gitops
+    end
+    
+    subgraph "CI Pipeline (GitHub Actions)"
+        Build{Docker Build}:::ci
+        Trivy[Trivy Scan]:::ci
+        Cosign[Cosign Sign]:::ci
+        PushGHCR[(GHCR Registry)]:::ext
+        HelmUpdate[Update Helm Values]:::ci
+    end
+    
+    subgraph "CD Pipeline (AKS Cluster)"
+        ArgoCD((ArgoCD Controller)):::cluster
+        Rollout[Argo Rollout Canary]:::cluster
+        Pods[[Pods en Producción]]:::cluster
     end
 
-    subgraph CI/CD Pipeline Github Actions
-        Build[Construcción de Imagen]
-        Cosign[Firma de Imagen Cosign]
-        Trivy[Escaneo Trivy]
-        UpdateManifest[Actualizar Helm Values]
-        
-        GitCode -->|Push| Build
-        Build --> Trivy
-        Trivy --> Cosign
-        Cosign -->|Push Image| GHCR[(Github Container Registry)]
-        Cosign --> UpdateManifest
-        UpdateManifest -->|Commit & Push| GitOpsRepo
-    end
-
-    subgraph AKS Cluster
-        subgraph Namespace argocd
-            ArgoCD[ArgoCD Application Controller]
-        end
-        subgraph Namespace produccion
-            RolloutAPI[Argo Rollouts<br/>API Gateway]
-            RolloutAuth[Argo Rollouts<br/>Auth Service]
-            RolloutApproval[Argo Rollouts<br/>Approval Service]
-            RabbitMQ[(RabbitMQ StatefulSet)]
-        end
-        
-        ArgoCD -->|Sync continuo| GitOpsRepo
-        ArgoCD -->|Aplica manifiestos| RolloutAPI
-graph LR
-    %% Definición de repositorios
-    Developer((Desarrollador))
-    RepoApp[fa:fa-github Repositorio Código<br/>(App Práctica)]
-    RepoGitOps[fa:fa-github Repositorio GitOps<br/>(Manifiestos)]
-
-    %% Pipeline CI
-    subgraph Pipeline CI [Github Actions]
-        direction TB
-        Build(Build Imagen Docker)
-        Scan(Trivy Vulnerability Scan)
-        Sign(Cosign Sign)
-        Push[(Push GHCR)]
-        Update(Update Helm Values)
-    end
-
-    %% GitOps y CD
-    subgraph Pipeline CD [Clúster Kubernetes]
-        direction TB
-        Argo[ArgoCD Controller]
-        Rollout[Argo Rollouts]
-        Pods((Nuevos Pods Canary))
-    end
-
-    %% Flujo Integración
-    Developer -->|1. Push de código| RepoApp
-    RepoApp -->|2. Trigger Workflow| Build
-    Build -->|3. Escaneo de seguridad| Scan
-    Scan -->|4. Firma digital| Sign
-    Sign -->|5. Sube imagen| Push
-    Push -->|6. Actualiza versión| Update
-    Update -->|7. Push auto| RepoGitOps
-
-    %% Flujo GitOps
-    RepoGitOps -->|8. Reconciliación| Argo
-    Argo -->|9. Aplica estado| Rollout
-    Rollout -->|10. Inicia Canary| Pods
+    %% Relaciones
+    Dev -->|1. Push Código| AppRepo
+    AppRepo -->|2. Trigger| Build
+    Build -->|3. Escaneo| Trivy
+    Trivy -->|4. Firma| Cosign
+    Cosign -->|5. Push Image| PushGHCR
+    PushGHCR --> HelmUpdate
+    HelmUpdate -->|6. Commit| ConfigRepo
+    
+    ConfigRepo -->|7. Sincronización continua| ArgoCD
+    ArgoCD -->|8. Aplica cambios| Rollout
+    PushGHCR -.->|9. Pull Image| Rollout
+    Rollout -->|10. Escalado Progresivo| Pods
 ```
 
 ## 1.3 Informe de Incidente
