@@ -26,13 +26,13 @@
 |---|---|
 | **Repositorio GitOps** | https://github.com/AndresCalvo98/software-avanzado-gitops |
 | **Aplicación en ArgoCD** | Nombre: `sa-platform-app` — Namespace: `argocd` |
-| **Ejecución exitosa del pipeline** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions/runs/16119145657 — Run #15, commit `386a4a0` |
+| **Ejecución exitosa del pipeline** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions/runs/35448971940 — Run #15, commit `386a4a0`, Status: **Success** |
 | **Reversión automática (Rollout + Run)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions — commit `a77ad67` — ver evidencia de AnalysisRun fallido |
 | **Despliegue rechazado por política Kyverno** | `prohibir-tag-latest` rechazó `nginx:latest` — `admission webhook validate.kyverno.svc-fail denied the request` |
 | **Bloqueo por vulnerabilidad crítica (Trivy)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions/runs/16118161584 — Run #11, exit code 1 ante CVE CRITICAL en `sa-transaction-service` |
 | **Imagen firmada con Cosign** | `ghcr.io/andrescalvo98/sa-api-gateway:386a4a07e3c5c4f9f7a4f3bbd91ad3e942f4a1b0` |
 | **Reporte de prueba de carga** | `P8/k6_load_test.js` — Umbrales: `p(95)<500ms`, `error rate<1%` |
-| **Video demostrativo** | *(Pendiente de grabación — minutaje se agregará aquí)* |
+| **Video demostrativo** | *(Sin video — se demuestra en calificación presencial)* |
 
 ---
 
