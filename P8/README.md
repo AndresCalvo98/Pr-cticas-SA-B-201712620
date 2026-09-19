@@ -95,19 +95,19 @@ Pod/produccion/test-latest was blocked — prohibir-tag-latest:
 
 ```mermaid
 flowchart TD
-    classDef rep fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px;
-    classDef action fill:#fff3e0,stroke:#fb8c00,stroke-width:2px;
-    classDef k8s fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+    classDef rep fill:transparent,stroke:#1e88e5,stroke-width:2px;
+    classDef action fill:transparent,stroke:#fb8c00,stroke-width:2px;
+    classDef k8s fill:transparent,stroke:#8e24aa,stroke-width:2px;
     
     Dev([Desarrollador])
 
     subgraph CODE ["Repositorio de Código (GitHub)"]
-        style CODE fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+        style CODE fill:transparent,stroke:#0288d1,stroke-width:2px,stroke-dasharray: 5 5
         AppRepo[(Repo App\nPr-cticas-SA-B-201712620)]:::rep
     end
 
     subgraph CI ["Pipeline CI — GitHub Actions"]
-        style CI fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+        style CI fill:transparent,stroke:#f57c00,stroke-width:2px,stroke-dasharray: 5 5
         direction TB
         Build["Docker Build\n(por microservicio)"]:::action
         TrivyScan["Trivy Scan\n(bloquea si CVE CRITICAL)"]:::action
@@ -119,17 +119,17 @@ flowchart TD
     end
 
     subgraph REGISTRY ["GHCR Registry"]
-        style REGISTRY fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+        style REGISTRY fill:transparent,stroke:#388e3c,stroke-width:2px,stroke-dasharray: 5 5
         Images[(Imágenes\nfirmadas + SBOM)]:::rep
     end
 
     subgraph GITOPS ["Repositorio GitOps (GitHub)"]
-        style GITOPS fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+        style GITOPS fill:transparent,stroke:#0288d1,stroke-width:2px,stroke-dasharray: 5 5
         ConfigRepo[(software-avanzado-gitops\nManifiestos Helm)]:::rep
     end
 
     subgraph CLUSTER ["Clúster AKS — Kubernetes"]
-        style CLUSTER fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+        style CLUSTER fill:transparent,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5
         direction TB
         Kyverno{{"Kyverno\nAdmission Webhook"}}:::k8s
         ArgoCD(["ArgoCD Controller\nReconciliación continua"]):::k8s
