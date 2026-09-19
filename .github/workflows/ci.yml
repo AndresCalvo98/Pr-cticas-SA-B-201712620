@@ -19,6 +19,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Checkout Code
@@ -83,6 +84,38 @@ jobs:
           context: ./P5/src/cronjobs/cronjob2
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/sa-cronjob-summary-broker:${{ github.sha }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Install Trivy
+        run: |
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.50.1/trivy_0.50.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.50.1_Linux-64bit.deb
+
+      - name: Scan and Sign Images
+        run: |
+          R=${{ env.REGISTRY }}/${{ env.REPO_OWNER }}
+          T=${{ github.sha }}
+          
+          IMAGES=(
+            "sa-api-gateway"
+            "sa-auth-service"
+            "sa-transaction-service"
+            "sa-approval-service"
+            "sa-notification-service"
+            "sa-cronjob-insert-db"
+            "sa-cronjob-summary-broker"
+          )
+          
+          for img in "${IMAGES[@]}"; do
+            FULL_IMAGE="$R/$img:$T"
+            echo "Scanning $FULL_IMAGE..."
+            trivy image --exit-code 1 --severity CRITICAL $FULL_IMAGE
+            
+            echo "Signing $FULL_IMAGE..."
+            cosign sign --yes $FULL_IMAGE
+          done
 
       - name: Set up Kubectl
         uses: azure/setup-kubectl@v3
