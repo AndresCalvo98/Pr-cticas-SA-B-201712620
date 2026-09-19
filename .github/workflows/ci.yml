@@ -85,6 +85,12 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/sa-cronjob-summary-broker:${{ github.sha }}
 
+      - name: Verificar charts locales con Helm Lint
+        run: |
+          helm lint P8/charts/sa-platform || echo "No P8 chart"
+          helm lint P6/charts/sa-platform || echo "No P6 chart"
+          helm lint P5/charts/sa-platform || echo "No P5 chart"
+
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3.5.0
 
