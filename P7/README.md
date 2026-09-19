@@ -31,37 +31,29 @@ El workflow se divide en los siguientes pasos lógicos:
 A continuación se muestra el diagrama visual de la arquitectura del flujo automatizado:
 
 ```mermaid
-graph TD
-    A[Desarrollador] -->|Git Push| B(Repositorio GitHub)
-    B -->|Trigger webhook| C{GitHub Actions}
+flowchart TD
+    classDef gitHub fill:#24292e,stroke:#fff,stroke-width:2px,color:#fff
+    classDef azure fill:#0072c6,stroke:#fff,stroke-width:2px,color:#fff
+    classDef docker fill:#0db7ed,stroke:#fff,stroke-width:2px,color:#fff
+    classDef action fill:#2c974b,stroke:#fff,stroke-width:2px,color:#fff
+    classDef dev fill:#f34f29,stroke:#fff,stroke-width:2px,color:#fff
+
+    Dev([Desarrollador]):::dev -->|git push| Repo[GitHub Repository]:::gitHub
     
-    subgraph Pipeline CI/CD
-        C --> D[Checkout Code]
-        D --> E[Login GHCR]
+    subgraph CI ["Pipeline CI/CD (GitHub Actions)"]
+        direction TB
+        Checkout[actions/checkout]:::action --> Login[docker/login-action]:::action
         
-        E --> F1[Build & Push api-gateway]
-        E --> F2[Build & Push auth-service]
-        E --> F3[Build & Push transaction]
-        E --> F4[Build & Push approval]
-        E --> F5[Build & Push notification]
-        E --> F6[Build & Push cronjobs]
+        Login --> Build[Build & Push de Microservicios]:::docker
         
-        F1 --> G[Set Kubeconfig]
-        F2 --> G
-        F3 --> G
-        F4 --> G
-        F5 --> G
-        F6 --> G
-        
-        G --> H[Helm Upgrade]
+        Build --> Kube[Configuración de Kubeconfig]:::action
+        Kube --> Deploy[Despliegue con Helm]:::action
     end
     
-    F1 -.->|Pushes image| I[(GitHub Container Registry)]
-    F2 -.->|Pushes image| I
-    F3 -.->|Pushes image| I
-    
-    H -->|Aplica manifiestos| J((Clúster Azure AKS))
-    I -.->|Pull images| J
+    Repo -->|Trigger webhook| Checkout
+    Build -->|docker push| Registry[(GHCR - Container Registry)]:::gitHub
+    Deploy -->|Aplica Manifiestos| AKS((Azure Kubernetes Service)):::azure
+    Registry -.->|Pull images| AKS
 ```
 
 ## Preguntas Teóricas y Análisis de Conceptos
