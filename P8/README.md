@@ -27,10 +27,10 @@
 | **Repositorio GitOps** | https://github.com/AndresCalvo98/software-avanzado-gitops |
 | **Aplicación en ArgoCD** | Nombre: `sa-platform-app` — Namespace: `argocd` |
 | **Ejecución exitosa del pipeline** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions/runs/16117248685 |
-| **Reversión automática (Rollout + Run)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions — commit `a77ad67` |
-| **Despliegue rechazado por política Kyverno** | Ver sección 1.2 — Política `prohibir-tag-latest` bloqueó Pod con `nginx:latest` |
-| **Bloqueo por vulnerabilidad crítica (Trivy)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions (pipeline falla ante CVE Critical) |
-| **Imagen firmada con Cosign** | `ghcr.io/andrescalvo98/sa-api-gateway:a77ad6744bad4fceee6971b7963b9c2696f29092` |
+| **Reversión automática (Rollout + Run)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions — commit `a77ad67` — ver evidencia de AnalysisRun fallido |
+| **Despliegue rechazado por política Kyverno** | `prohibir-tag-latest` rechazó `nginx:latest` — mensaje: `admission webhook validate.kyverno.svc-fail denied the request` |
+| **Bloqueo por vulnerabilidad crítica (Trivy)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions/runs/16118161584 — pipeline falló con exit code 1 ante CVE CRITICAL en `sa-transaction-service` |
+| **Imagen firmada con Cosign** | `ghcr.io/andrescalvo98/sa-api-gateway:168479959e57b479296095824f02db3f7c8714ba` |
 | **Reporte de prueba de carga** | `P8/k6_load_test.js` — Umbrales: `p(95)<500ms`, `error rate<1%` |
 | **Video demostrativo** | *(Pendiente de grabación — minutaje se agregará aquí)* |
 
