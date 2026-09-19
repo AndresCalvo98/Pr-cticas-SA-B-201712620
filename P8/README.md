@@ -32,7 +32,7 @@
 | **Bloqueo por vulnerabilidad crítica (Trivy)** | https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/actions/runs/16118161584 — Run #11, exit code 1 ante CVE CRITICAL en `sa-transaction-service` |
 | **Imagen firmada con Cosign** | `ghcr.io/andrescalvo98/sa-api-gateway:386a4a07e3c5c4f9f7a4f3bbd91ad3e942f4a1b0` |
 | **Reporte de prueba de carga** | `P8/k6_load_test.js` — Umbrales: `p(95)<500ms`, `error rate<1%` |
-| **Video demostrativo** | |
+| **Video demostrativo** | *(Sin video — se demuestra en calificación presencial)* |
 
 ---
 
@@ -95,72 +95,61 @@ Pod/produccion/test-latest was blocked — prohibir-tag-latest:
 
 ```mermaid
 flowchart TD
-    %% Estilos Profesionales
-    classDef default fill:#ffffff,stroke:#cfd8dc,stroke-width:1px,color:#37474f;
-    classDef userNode fill:#e0f7fa,stroke:#00acc1,stroke-width:2px,color:#006064,rx:10,ry:10;
-    classDef repo fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px,color:#0d47a1;
-    classDef pipeline fill:#fff3e0,stroke:#fb8c00,stroke-width:2px,color:#e65100;
-    classDef security fill:#e8f5e9,stroke:#43a047,stroke-width:2px,color:#1b5e20;
-    classDef cluster fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px,color:#4a148c;
-    classDef alert fill:#ffebee,stroke:#e53935,stroke-width:2px,color:#b71c1c;
-    
-    Dev([Desarrollador]):::userNode
-    
-    subgraph GitHub ["Control de Versiones y Registros"]
-        direction TB
-        CodeRepo[(Repositorio de Código)]:::repo
-        GitOpsRepo[(Repositorio GitOps)]:::repo
-        Registry[(GitHub Container Registry)]:::repo
+    Dev([👨‍💻 Desarrollador])
+
+    subgraph CODE ["Repositorio de Código (GitHub)"]
+        AppRepo[(Repo App\nPr-cticas-SA-B-201712620)]
     end
 
-    subgraph CI ["Pipeline de Integración Continua"]
+    subgraph CI ["Pipeline CI — GitHub Actions"]
         direction TB
-        Build[Docker Build & Test]:::pipeline
-        Trivy[Trivy Vulnerability Scan]:::security
-        SBOM[Syft SBOM Generation]:::security
-        Cosign[Cosign Image Signing]:::security
-        HelmLint[Helm Lint Validation]:::pipeline
-        UpdateValues[Actualización de Tags]:::pipeline
-        PR[Auto Pull Request]:::pipeline
+        Build["🐳 Docker Build\n(por microservicio)"]
+        TrivyScan["🔍 Trivy Scan\n(bloquea si CVE CRITICAL)"]
+        SBOMGen["📋 Syft SBOM\n(adjunto a imagen)"]
+        CosignSign["✍️ Cosign Sign\n(keyless OIDC)"]
+        HelmLint["📦 Helm Lint\n(valida charts)"]
+        UpdateValues["📝 Update Helm Values\n(nuevo SHA en values-aks.yaml)"]
+        PR["🔀 Pull Request\nautomático"]
     end
 
-    subgraph Kubernetes ["Clúster AKS (Producción)"]
-        direction TB
-        ArgoCD([ArgoCD Controller]):::cluster
-        Kyverno{Kyverno Admission Webhook}:::security
-        Rollout[Argo Rollouts - Deployment]:::cluster
-        Analysis[AnalysisRun - k6 Load Test]:::cluster
-        ActivePods[[Pods de Producción]]:::cluster
-        Rollback[Rollback Automático]:::alert
+    subgraph REGISTRY ["GHCR Registry"]
+        Images[(Imágenes\nfirmadas + SBOM)]
     end
 
-    %% Relaciones Lógicas
-    Dev -->|Push a main| CodeRepo
-    CodeRepo -->|Dispara Action| Build
-    
-    Build --> Trivy
-    Trivy -->|Detecta CVE CRITICAL| Halt([Pipeline Fallido]):::alert
-    Trivy -->|Pasa revisión| SBOM
-    
-    SBOM --> Cosign
-    Cosign -->|Publica imagen| Registry
-    Cosign --> HelmLint
-    HelmLint --> UpdateValues
-    UpdateValues --> PR
-    
-    PR -.->|Merge manual| GitOpsRepo
-    
-    GitOpsRepo -->|Sincronización Continua| ArgoCD
-    ArgoCD -->|Aplica manifiestos| Kyverno
-    
-    Kyverno -->|Viola Políticas| Rollback
-    Kyverno -->|Pasa Políticas| Rollout
-    
-    Registry -.->|Descarga Imagen| Rollout
-    Rollout -->|Despliegue Canary 20%| Analysis
-    
-    Analysis -->|Umbrales Excedidos| Rollback
-    Analysis -->|Métricas Exitosas| ActivePods
+    subgraph GITOPS ["Repositorio GitOps (GitHub)"]
+        ConfigRepo[(software-avanzado-gitops\nManifiestos Helm)]
+    end
+
+    subgraph CLUSTER ["Clúster AKS — Kubernetes"]
+        direction TB
+        Kyverno{{"🛡️ Kyverno\nAdmission Webhook"}}
+        ArgoCD(["🔄 ArgoCD Controller\nReconciliación continua"])
+        Rollout["🚀 Argo Rollout\nCanary 20→40→80%"]
+        Analysis["📊 AnalysisRun\nk6 load test"]
+        Pods[["✅ Pods en\nProducción"]]
+        Rollback["⏪ Rollback\nAutomático"]
+    end
+
+    Dev -->|"1. git push"| AppRepo
+    AppRepo -->|"2. Trigger workflow"| Build
+    Build -->|"3. Scan CVEs"| TrivyScan
+    TrivyScan -->|"❌ CRITICAL → falla el pipeline"| PR
+    TrivyScan -->|"✅ Sin CVEs críticas"| SBOMGen
+    SBOMGen -->|"4. Genera SBOM"| CosignSign
+    CosignSign -->|"5. Push imagen firmada"| Images
+    CosignSign --> HelmLint
+    HelmLint -->|"6. Actualiza tag"| UpdateValues
+    UpdateValues -->|"7. Auto-commit"| ConfigRepo
+    ConfigRepo -->|"8. PR revisado"| PR
+
+    ConfigRepo -->|"9. Monitoreo pull\ncada 3 min"| ArgoCD
+    ArgoCD -->|"10. Kyverno valida\nantes de crear Pod"| Kyverno
+    Kyverno -->|"❌ Rechaza si viola política"| Rollback
+    Kyverno -->|"✅ Aprobado"| Rollout
+    Images -.->|"11. Pull imagen"| Rollout
+    Rollout -->|"12. Inicia análisis"| Analysis
+    Analysis -->|"✅ p95<500ms, error<1%"| Pods
+    Analysis -->|"❌ Umbral superado"| Rollback
 ```
 
 ---
