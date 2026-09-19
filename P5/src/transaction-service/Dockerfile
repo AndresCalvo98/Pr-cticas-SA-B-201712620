@@ -1,15 +1,15 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
-# Copiar todo el código primero
+# Copiar todo el código fuente
 COPY . .
 
-# Actualizar todas las dependencias transitivas a su última versión compatible
-# para asegurar que no existan CVEs con fix disponible
+# Actualizar todas las dependencias a sus últimas versiones compatibles
 RUN go get -u ./... && go mod tidy
 
-# Compilar el binario estáticamente
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main .
+# Compilar con -trimpath para eliminar info de rutas locales del binario
+# y -ldflags para reducir el tamaño y metadata del binario
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o main .
 
 FROM alpine:3.21
 WORKDIR /app

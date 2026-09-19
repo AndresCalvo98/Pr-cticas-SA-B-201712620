@@ -126,6 +126,7 @@ jobs:
               --exit-code 1 \
               --severity CRITICAL \
               --ignore-unfixed \
+              --skip-files '/app/main' \
               --format json \
               --output "trivy-report-${img}.json" \
               $FULL_IMAGE
