@@ -64,6 +64,19 @@ graph TD
     I -.->|Pull images| J
 ```
 
+## Preguntas Teóricas y Análisis de Conceptos
+
+Para dar cumplimiento al inciso 1.4 de la rúbrica, a continuación se presenta un análisis de los conceptos clave interiorizados durante el desarrollo de este flujo:
+
+**1. ¿Cuál es el valor real de implementar CI/CD en un entorno de microservicios?**
+En una arquitectura basada en microservicios, el sistema está compuesto por múltiples piezas independientes que evolucionan a diferentes velocidades. Implementar CI/CD elimina el "infierno de integración", ya que cada cambio (por mínimo que sea) se compila, empaca y despliega de manera aislada y automatizada. Esto reduce drásticamente el error humano, permite a los desarrolladores recibir *feedback* inmediato sobre si su código rompe el entorno, y asegura que la versión en producción siempre sea consistente con el repositorio (única fuente de verdad).
+
+**2. ¿Cómo apoya la automatización (GitHub Actions) a la cultura DevOps?**
+DevOps busca derribar la barrera entre Desarrollo y Operaciones. Al usar GitHub Actions, el proceso de *Build & Deploy* se vuelve transparente y auditable para todo el equipo. Los desarrolladores ya no "lanzan el código por encima del muro" para que Operaciones lo despliegue manualmente. Ahora, la definición de la infraestructura y el despliegue vive junto al código fuente, empoderando al equipo a ser dueño del ciclo de vida completo de la aplicación y fomentando la responsabilidad compartida.
+
+**3. ¿Por qué es importante el versionamiento semántico o el uso de Hashes (SHA) en lugar del tag `latest`?**
+El tag `latest` es un antipatrón en K8s porque es mutable; no garantiza qué versión exacta del código se está ejecutando. En este pipeline, se utilizó el hash del commit (`${{ github.sha }}`) como etiqueta para cada imagen Docker. Esto garantiza *trazabilidad absoluta*: si ocurre un error en el clúster, podemos saber con exactitud matemática qué línea de código (commit) lo causó, y permite realizar *rollbacks* predecibles y seguros.
+
 ## Evidencias de Ejecución
 
 A continuación se adjuntan las evidencias de la ejecución exitosa de los requerimientos de la Práctica 7:
