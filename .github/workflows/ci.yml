@@ -70,12 +70,19 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/sa-notification-service:${{ github.sha }}
 
-      - name: Build and Push Cronjobs
+      - name: Build and Push Cronjob 1 (Insert DB)
         uses: docker/build-push-action@v5
         with:
-          context: ./P5/src/cronjobs
+          context: ./P5/src/cronjobs/cronjob1
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/sa-cronjobs:${{ github.sha }}
+          tags: ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/sa-cronjob-insert-db:${{ github.sha }}
+
+      - name: Build and Push Cronjob 2 (Summary Broker)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./P5/src/cronjobs/cronjob2
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/sa-cronjob-summary-broker:${{ github.sha }}
 
       - name: Set up Kubectl
         uses: azure/setup-kubectl@v3
@@ -109,7 +116,7 @@ jobs:
             --set approval-service.image.tag=$T \
             --set notification-service.image.repository=$R/sa-notification-service \
             --set notification-service.image.tag=$T \
-            --set cronjobs.insertDb.image.repository=$R/sa-cronjobs \
+            --set cronjobs.insertDb.image.repository=$R/sa-cronjob-insert-db \
             --set cronjobs.insertDb.image.tag=$T \
-            --set cronjobs.summaryBroker.image.repository=$R/sa-cronjobs \
+            --set cronjobs.summaryBroker.image.repository=$R/sa-cronjob-summary-broker \
             --set cronjobs.summaryBroker.image.tag=$T
