@@ -62,3 +62,8 @@ postgresql:
     persistence:
       enabled: true
       size: 1Gi
+
+rabbitmq:
+  auth:
+    username: "AndresCalvo"
+    password: "password"
