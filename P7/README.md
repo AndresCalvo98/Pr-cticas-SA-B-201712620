@@ -63,3 +63,13 @@ graph TD
     H -->|Aplica manifiestos| J((Clúster Azure AKS))
     I -.->|Pull images| J
 ```
+
+## Evidencias de Ejecución
+
+A continuación se adjuntan las evidencias de la ejecución exitosa de los requerimientos de la Práctica 7:
+
+### 1. Pipeline CI/CD Funcional
+![Ejecución Exitosa del Pipeline en GitHub Actions](./IMG/pipeline_exitoso.png)
+
+### 2. Imágenes en Docker Registry (GHCR)
+![Imágenes publicadas en GitHub Container Registry](./IMG/imagenes_ghcr.png)
