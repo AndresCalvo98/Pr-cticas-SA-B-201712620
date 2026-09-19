@@ -95,46 +95,55 @@ Pod/produccion/test-latest was blocked — prohibir-tag-latest:
 
 ```mermaid
 flowchart TD
-    Dev([👨‍💻 Desarrollador])
+    classDef rep fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px;
+    classDef action fill:#fff3e0,stroke:#fb8c00,stroke-width:2px;
+    classDef k8s fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px;
+    
+    Dev([Desarrollador])
 
     subgraph CODE ["Repositorio de Código (GitHub)"]
-        AppRepo[(Repo App\nPr-cticas-SA-B-201712620)]
+        style CODE fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+        AppRepo[(Repo App\nPr-cticas-SA-B-201712620)]:::rep
     end
 
     subgraph CI ["Pipeline CI — GitHub Actions"]
+        style CI fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
         direction TB
-        Build["🐳 Docker Build\n(por microservicio)"]
-        TrivyScan["🔍 Trivy Scan\n(bloquea si CVE CRITICAL)"]
-        SBOMGen["📋 Syft SBOM\n(adjunto a imagen)"]
-        CosignSign["✍️ Cosign Sign\n(keyless OIDC)"]
-        HelmLint["📦 Helm Lint\n(valida charts)"]
-        UpdateValues["📝 Update Helm Values\n(nuevo SHA en values-aks.yaml)"]
-        PR["🔀 Pull Request\nautomático"]
+        Build["Docker Build\n(por microservicio)"]:::action
+        TrivyScan["Trivy Scan\n(bloquea si CVE CRITICAL)"]:::action
+        SBOMGen["Syft SBOM\n(adjunto a imagen)"]:::action
+        CosignSign["Cosign Sign\n(keyless OIDC)"]:::action
+        HelmLint["Helm Lint\n(valida charts)"]:::action
+        UpdateValues["Update Helm Values\n(nuevo SHA en values-aks.yaml)"]:::action
+        PR["Pull Request\nautomático"]:::action
     end
 
     subgraph REGISTRY ["GHCR Registry"]
-        Images[(Imágenes\nfirmadas + SBOM)]
+        style REGISTRY fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#000
+        Images[(Imágenes\nfirmadas + SBOM)]:::rep
     end
 
     subgraph GITOPS ["Repositorio GitOps (GitHub)"]
-        ConfigRepo[(software-avanzado-gitops\nManifiestos Helm)]
+        style GITOPS fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#000
+        ConfigRepo[(software-avanzado-gitops\nManifiestos Helm)]:::rep
     end
 
     subgraph CLUSTER ["Clúster AKS — Kubernetes"]
+        style CLUSTER fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
         direction TB
-        Kyverno{{"🛡️ Kyverno\nAdmission Webhook"}}
-        ArgoCD(["🔄 ArgoCD Controller\nReconciliación continua"])
-        Rollout["🚀 Argo Rollout\nCanary 20→40→80%"]
-        Analysis["📊 AnalysisRun\nk6 load test"]
-        Pods[["✅ Pods en\nProducción"]]
-        Rollback["⏪ Rollback\nAutomático"]
+        Kyverno{{"Kyverno\nAdmission Webhook"}}:::k8s
+        ArgoCD(["ArgoCD Controller\nReconciliación continua"]):::k8s
+        Rollout["Argo Rollout\nCanary 20→40→80%"]:::k8s
+        Analysis["AnalysisRun\nk6 load test"]:::k8s
+        Pods[["Pods en\nProducción"]]:::k8s
+        Rollback["Rollback\nAutomático"]:::k8s
     end
 
     Dev -->|"1. git push"| AppRepo
     AppRepo -->|"2. Trigger workflow"| Build
     Build -->|"3. Scan CVEs"| TrivyScan
-    TrivyScan -->|"❌ CRITICAL → falla el pipeline"| PR
-    TrivyScan -->|"✅ Sin CVEs críticas"| SBOMGen
+    TrivyScan -->|"CRITICAL → falla el pipeline"| PR
+    TrivyScan -->|"Sin CVEs críticas"| SBOMGen
     SBOMGen -->|"4. Genera SBOM"| CosignSign
     CosignSign -->|"5. Push imagen firmada"| Images
     CosignSign --> HelmLint
@@ -144,12 +153,12 @@ flowchart TD
 
     ConfigRepo -->|"9. Monitoreo pull\ncada 3 min"| ArgoCD
     ArgoCD -->|"10. Kyverno valida\nantes de crear Pod"| Kyverno
-    Kyverno -->|"❌ Rechaza si viola política"| Rollback
-    Kyverno -->|"✅ Aprobado"| Rollout
+    Kyverno -->|"Rechaza si viola política"| Rollback
+    Kyverno -->|"Aprobado"| Rollout
     Images -.->|"11. Pull imagen"| Rollout
     Rollout -->|"12. Inicia análisis"| Analysis
-    Analysis -->|"✅ p95<500ms, error<1%"| Pods
-    Analysis -->|"❌ Umbral superado"| Rollback
+    Analysis -->|"p95<500ms, error<1%"| Pods
+    Analysis -->|"Umbral superado"| Rollback
 ```
 
 ---
