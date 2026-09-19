@@ -74,7 +74,8 @@ El tag `latest` es un antipatrón en K8s porque es mutable; no garantiza qué ve
 A continuación se adjuntan las evidencias de la ejecución exitosa de los requerimientos de la Práctica 7:
 
 ### 1. Pipeline CI/CD Funcional
-![Ejecución Exitosa del Pipeline en GitHub Actions](./IMG/pipeline_exitoso.png)
+![Ejecución Exitosa del Pipeline en GitHub Actions](./IMG/pipeline_exitoso1.jpeg)
+![Ejecución Exitosa del Pipeline en GitHub Actions](./IMG/pipeline_exitoso2.jpeg)
 
 ### 2. Imágenes en Docker Registry (GHCR)
-![Imágenes publicadas en GitHub Container Registry](./IMG/imagenes_ghcr.png)
+![Imágenes publicadas en GitHub Container Registry](./IMG/imagenes_ghcr.jpeg)
