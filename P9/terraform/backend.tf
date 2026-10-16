@@ -21,6 +21,7 @@ terraform {
     storage_account_name = "sasp9tfstate10854"
     container_name       = "tfstate"
     key                  = "p9.terraform.tfstate"
+    # Azure Blob Storage native state lease locking habilitado (lock)
   }
 }
 
