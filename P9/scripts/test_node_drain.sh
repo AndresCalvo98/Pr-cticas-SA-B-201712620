@@ -32,18 +32,21 @@ echo "" | tee -a "$LOG_FILE"
 echo ">> [2/5] Distribución de Pods antes del drenaje (Anti-Afinidad):" | tee -a "$LOG_FILE"
 kubectl get pods -n produccion -o wide | tee -a "$LOG_FILE"
 
-# 3. Iniciar verificación de tráfico continuo
+# 3. Iniciar verificación de tráfico continuo mediante cliente independiente
 echo "" | tee -a "$LOG_FILE"
 echo ">> [3/5] Iniciando verificación de disponibilidad de servicio en background..." | tee -a "$LOG_FILE"
 
-GATEWAY_POD=$(kubectl get pod -n produccion -l app.kubernetes.io/name=api-gateway -o jsonpath='{.items[0].metadata.name}')
+kubectl run traffic-prober --image=curlimages/curl:8.6.0 --restart=Never -n default --overrides="{\"spec\":{\"nodeName\":\"${SURVIVOR_NODE}\"}}" -- sleep 120 || true
+kubectl wait --for=condition=ready pod/traffic-prober -n default --timeout=60s || true
 
 PROBE_LOG="evidencias/traffic_probe.log"
 > "$PROBE_LOG"
 
+SVC_NAME=$(kubectl get svc -n produccion -l app.kubernetes.io/name=api-gateway -o jsonpath='{.items[0].metadata.name}' || echo "sa-platform-app-api-gateway")
+
 (
   for i in {1..30}; do
-    STATUS=$(kubectl exec -n produccion "$GATEWAY_POD" -- curl -s -o /dev/null -w "%{http_code}" http://localhost:80 || echo "FAIL")
+    STATUS=$(kubectl exec -n default traffic-prober -- curl -s -o /dev/null -w "%{http_code}" "http://${SVC_NAME}.produccion.svc.cluster.local:80" || echo "FAIL")
     echo "$(date +%T) - Request #$i -> Status: $STATUS" >> "$PROBE_LOG"
     sleep 1
   done
@@ -72,6 +75,7 @@ kubectl get pods -n produccion -o wide | tee -a "$LOG_FILE"
 echo "" | tee -a "$LOG_FILE"
 echo ">> [5/5] Restaurando el nodo $TARGET_NODE (Uncordon)..." | tee -a "$LOG_FILE"
 kubectl uncordon "$TARGET_NODE" | tee -a "$LOG_FILE"
+kubectl delete pod traffic-prober -n default --wait=false 2>/dev/null || true
 
 echo "" | tee -a "$LOG_FILE"
 echo "======================================================================" | tee -a "$LOG_FILE"
