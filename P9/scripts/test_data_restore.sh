@@ -14,7 +14,7 @@ echo " [START] PRUEBA DE RESTAURACIÓN DE DATOS CON ESTADO EN VELERO" | tee -a "
 echo " Fecha y hora: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" | tee -a "$LOG_FILE"
 echo "======================================================================" | tee -a "$LOG_FILE"
 
-PG_POD=$(kubectl get pod -n produccion -l app=sa-platform-postgresql -o jsonpath='{.items[0].metadata.name}' || kubectl get pod -n produccion -l app.kubernetes.io/name=postgresql -o jsonpath='{.items[0].metadata.name}')
+PG_POD=$(kubectl get pods -n produccion -o name | grep -i postgresql | head -n 1 | cut -d/ -f2)
 
 echo "Pod de PostgreSQL detectado: $PG_POD" | tee -a "$LOG_FILE"
 

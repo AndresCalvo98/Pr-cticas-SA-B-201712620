@@ -39,9 +39,11 @@ EOF
 echo "=== [3/4] Instalando Velero CLI (si no existe) e instalando servidor en clúster ==="
 if ! command -v velero &> /dev/null; then
   echo "Descargando Velero CLI para Linux..."
+  mkdir -p ~/bin
   curl -fsSL https://github.com/vmware-tanzu/velero/releases/download/v1.14.0/velero-v1.14.0-linux-amd64.tar.gz | tar -xz
-  sudo mv velero-v1.14.0-linux-amd64/velero /usr/local/bin/ || mv velero-v1.14.0-linux-amd64/velero ~/bin/ || true
+  mv velero-v1.14.0-linux-amd64/velero ~/bin/
   rm -rf velero-v1.14.0-linux-amd64
+  export PATH="${HOME}/bin:${PATH}"
 fi
 
 # Instalar Velero en el clúster AKS con el plugin de Azure y node-agent para respaldar PVCs
