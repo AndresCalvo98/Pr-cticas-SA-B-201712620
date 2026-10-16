@@ -65,24 +65,29 @@ echo "" | tee -a "$LOG_FILE"
 echo ">> [3/5] SIMULANDO DESASTRE: Corrupción de base de datos y pérdida del volumen persistente..." | tee -a "$LOG_FILE"
 kubectl exec -n produccion "$PG_POD" -- env PGPASSWORD="secretpassword" psql -U postgres -d transacciones -c "DROP TABLE clientes_transacciones;" | tee -a "$LOG_FILE" || true
 
-# Pausar auto-sync de ArgoCD temporalmente para evitar que cree un PVC vacío antes de la restauración
-kubectl patch application sa-platform-app -n argocd --type merge -p '{"spec":{"syncPolicy":null}}' > /dev/null 2>&1 || true
+# Pausar el Application Controller de ArgoCD para evitar que recree los recursos antes que Velero
+echo "Pausando temporalmente ArgoCD Application Controller..." | tee -a "$LOG_FILE"
+kubectl scale deployment argocd-application-controller -n argocd --replicas=0
+kubectl wait --for=delete pod -l app.kubernetes.io/name=argocd-application-controller -n argocd --timeout=30s || true
 
 # Eliminar StatefulSet y PVC simulando pérdida total del almacenamiento persistente
 echo "Eliminando StatefulSet y PersistentVolumeClaim de PostgreSQL..." | tee -a "$LOG_FILE"
 kubectl delete statefulset sa-platform-app-postgresql -n produccion --cascade=foreground --wait=true
 kubectl delete pvc data-sa-platform-app-postgresql-0 -n produccion --wait=true || true
+kubectl wait --for=delete pod/sa-platform-app-postgresql-0 -n produccion --timeout=60s || true
+kubectl wait --for=delete pvc/data-sa-platform-app-postgresql-0 -n produccion --timeout=60s || true
 
 # 4. Restaurar desde el respaldo de Velero
 RESTORE_NAME="restore-verificacion-db-$(date +%s)"
 echo "" | tee -a "$LOG_FILE"
-echo ">> [4/5] Restaurando StatefulSet, PVC y datos desde Velero ($RESTORE_NAME)..." | tee -a "$LOG_FILE"
+echo ">> [4/5] Restaurando StatefulSet, PVC, PV y datos desde Velero ($RESTORE_NAME)..." | tee -a "$LOG_FILE"
 RESTORE_START=$(date +%s)
-velero restore create "$RESTORE_NAME" --from-backup "$BACKUP_NAME" --include-resources statefulsets.apps,persistentvolumeclaims,pods --wait | tee -a "$LOG_FILE"
+velero restore create "$RESTORE_NAME" --from-backup "$BACKUP_NAME" --include-namespaces produccion --include-resources statefulsets.apps,persistentvolumeclaims,persistentvolumes,pods --wait | tee -a "$LOG_FILE"
 RESTORE_END=$(date +%s)
 
-# Reactivar auto-sync de ArgoCD
-kubectl patch application sa-platform-app -n argocd --type merge -p '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":true}}}}' > /dev/null 2>&1 || true
+# Reanudar ArgoCD Application Controller
+echo "Reanudando ArgoCD Application Controller..." | tee -a "$LOG_FILE"
+kubectl scale deployment argocd-application-controller -n argocd --replicas=1
 
 # Esperar a que el pod restaurado esté 1/1 Ready
 echo "Esperando a que el pod de PostgreSQL restaurado esté 1/1 Ready..." | tee -a "$LOG_FILE"
