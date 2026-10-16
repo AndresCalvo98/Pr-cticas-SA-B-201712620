@@ -9,6 +9,17 @@ set -euo pipefail
 LOG_FILE="evidencias/restauracion_datos.txt"
 mkdir -p evidencias
 
+export PATH="${HOME}/bin:/usr/local/bin:${PATH}"
+
+if ! command -v velero &> /dev/null; then
+  echo "Velero CLI no encontrado en PATH. Configurando binario de Velero..."
+  mkdir -p "${HOME}/bin"
+  curl -fsSL https://github.com/vmware-tanzu/velero/releases/download/v1.14.0/velero-v1.14.0-linux-amd64.tar.gz | tar -xz -C /tmp/
+  mv /tmp/velero-v1.14.0-linux-amd64/velero "${HOME}/bin/"
+  rm -rf /tmp/velero-v1.14.0-linux-amd64
+  chmod +x "${HOME}/bin/velero"
+fi
+
 echo "======================================================================" | tee -a "$LOG_FILE"
 echo " [START] PRUEBA DE RESTAURACIÓN DE DATOS CON ESTADO EN VELERO" | tee -a "$LOG_FILE"
 echo " Fecha y hora: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" | tee -a "$LOG_FILE"
