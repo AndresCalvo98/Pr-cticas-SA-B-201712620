@@ -42,12 +42,23 @@ echo "[4/6] Obteniendo credenciales del clúster AKS..."
 KUBECONFIG_CMD=$(terraform output -raw aks_kubeconfig_command)
 eval "${KUBECONFIG_CMD}"
 
-# 5. Garantizar Continuidad de Secretos: Inyectar Llave Maestra de Sealed Secrets
-echo "[5/6] Instalando Sealed Secrets y Restaurando Llave Maestra para Continuidad de Secretos..."
+# 5. Garantizar Continuidad del Ecosistema P8: Argo Rollouts, Kyverno y Sealed Secrets
+echo "[5/6] Instalando Controladores Core: Argo Rollouts, Kyverno y Sealed Secrets..."
+
+# 5.1 Argo Rollouts (Entrega Progresiva)
+echo ">> Instalando Argo Rollouts..."
+kubectl create namespace argo-rollouts --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+
+# 5.2 Kyverno (Políticas de Admisión)
+echo ">> Instalando Kyverno..."
+kubectl apply -f https://github.com/kyverno/kyverno/releases/download/v1.12.5/install.yaml
+
+# 5.3 Sealed Secrets y Llave Maestra
+echo ">> Instalando Sealed Secrets y Restaurando Llave Maestra..."
 kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.26.0/controller.yaml
 if [ -f "${SECRETS_DIR}/sealed-secrets-key.yaml" ]; then
   kubectl apply -f "${SECRETS_DIR}/sealed-secrets-key.yaml"
-  # Reiniciar el deployment para cargar inmediatamente la llave maestra restaurada
   kubectl rollout restart deployment -n kube-system sealed-secrets-controller || true
   kubectl rollout status deployment -n kube-system sealed-secrets-controller --timeout=60s || true
   echo ">> Llave maestra de Sealed Secrets inyectada y cargada con éxito."
