@@ -48,8 +48,8 @@ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/downloa
 if [ -f "${SECRETS_DIR}/sealed-secrets-key.yaml" ]; then
   kubectl apply -f "${SECRETS_DIR}/sealed-secrets-key.yaml"
   # Reiniciar el deployment para cargar inmediatamente la llave maestra restaurada
-  kubectl rollout restart deployment -n kube-system sealed-secrets || true
-  kubectl rollout status deployment -n kube-system sealed-secrets --timeout=60s || true
+  kubectl rollout restart deployment -n kube-system sealed-secrets-controller || true
+  kubectl rollout status deployment -n kube-system sealed-secrets-controller --timeout=60s || true
   echo ">> Llave maestra de Sealed Secrets inyectada y cargada con éxito."
 else
   echo "ADVERTENCIA: No se encontró ${SECRETS_DIR}/sealed-secrets-key.yaml"
