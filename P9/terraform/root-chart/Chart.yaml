@@ -1,0 +1,6 @@
+apiVersion: v2
+name: root-app
+description: Chart para la aplicacion raiz App-of-Apps de ArgoCD
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

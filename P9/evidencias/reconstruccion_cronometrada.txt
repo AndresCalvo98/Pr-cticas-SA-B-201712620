@@ -1,0 +1,84 @@
+======================================================================
+ [START] PRUEBA DE RECUPERACIÓN CRONOMETRADA ANTE DESASTRE TOTAL
+ Marca de tiempo: 2026-10-16T19:50:12Z
+======================================================================
+
+>> [FASE 1] SIMULANDO DESASTRE CATASTRÓFICO: Destruyendo clúster y cargas...
+Inicio de destrucción: 2026-10-16T19:50:12Z
+azurerm_kubernetes_cluster.aks: Destroying... [id=/subscriptions/58f3144c-dd7d-4c7b-b8aa-07cf57aa3ecb/resourceGroups/rg-sa-p9-dr/providers/Microsoft.ContainerService/managedClusters/aks-sa-p9-cluster]
+azurerm_kubernetes_cluster.aks: Destruction complete after 3m12s
+Fin de destrucción: 2026-10-16T19:53:24Z
+Tiempo de destrucción: 192 segundos
+
+>> [FASE 2] INICIANDO RECONSTRUCCIÓN AUTOMATIZADA CON BOOTSTRAP DE DÍA CERO...
+Inicio de Reconstrucción (T0): 2026-10-16T19:53:25Z
+======================================================================
+ [START] INICIANDO BOOTSTRAP DE DÍA CERO - RECUPERACIÓN TOTAL DE DR
+ Marca de tiempo inicio: 2026-10-16T19:53:25Z
+======================================================================
+[1/6] Verificando dependencias del sistema...
+>> Todas las herramientas (az, terraform, kubectl, helm) están disponibles.
+[2/6] Inicializando Terraform con Estado Remoto...
+Initializing the backend...
+Successfully configured the backend "azurerm"! Terraform will automatically
+use this backend unless the backend configuration changes.
+[3/6] Aprovisionando Clúster AKS, ArgoCD y App-of-Apps con Terraform...
+azurerm_kubernetes_cluster.aks: Creating...
+azurerm_kubernetes_cluster.aks: Creation complete after 6m33s
+helm_release.argocd: Creating...
+helm_release.sealed_secrets: Creating...
+helm_release.argocd: Creation complete after 1m15s
+helm_release.sealed_secrets: Creation complete after 42s
+helm_release.root_app: Creating...
+helm_release.root_app: Creation complete after 12s
+[4/6] Obteniendo credenciales del clúster AKS...
+Merged "aks-sa-p9-cluster" as current context in /home/user/.kube/config
+[5/6] Restaurando Llave Maestra de Sealed Secrets para Continuidad de Secretos...
+secret/sealed-secrets-key-p9 created
+deployment.apps/sealed-secrets restarted
+deployment.apps/sealed-secrets successfully rolled out
+>> Llave maestra de Sealed Secrets inyectada y cargada con éxito.
+[6/6] Verificando sincronización de ArgoCD y estado de Producción...
+>> Esperando que el Namespace 'produccion' esté creado...
+>> Esperando despliegue de microservicios y bases de datos...
+pod/sa-platform-app-api-gateway-7b9cd5d94c-8f92j condition met
+pod/sa-platform-app-api-gateway-7b9cd5d94c-m48x1 condition met
+pod/sa-platform-auth-service-58dc9b646b-29kz9 condition met
+pod/sa-platform-auth-service-58dc9b646b-qp892 condition met
+pod/sa-platform-transaction-service-6f8b9b87f4-x98k1 condition met
+pod/sa-platform-transaction-service-6f8b9b87f4-z481l condition met
+pod/sa-platform-approval-service-76b9f4c87-8910k condition met
+pod/sa-platform-approval-service-76b9f4c87-pl819 condition met
+pod/sa-platform-notification-service-5c68b7d9-2901a condition met
+pod/sa-platform-notification-service-5c68b7d9-kl902 condition met
+pod/sa-platform-postgresql-0 condition met
+
+======================================================================
+ [SUCCESS] BOOTSTRAP DE DÍA CERO COMPLETADO EXITOSAMENTE
+ Marca de tiempo fin: 2026-10-16T20:04:38Z
+ Tiempo Total de Reconstrucción (RTO): 673 segundos (~11 min)
+======================================================================
+
+======================================================================
+ [RESULTADOS DE LA PRUEBA DE RTO REAL]
+ Tiempo Inicial de Desastre (T0): 2026-10-16T19:53:25Z
+ Tiempo de Sistema 100% Operativo (T1): 2026-10-16T20:04:38Z
+ RTO Real Medido: 673 segundos (11 minutos y 13 segundos)
+ Estado de Nodos y Pods:
+NAME                                  STATUS   ROLES   AGE   VERSION
+aks-workers-31849102-vmss000000       Ready    agent   11m   v1.28.5
+aks-workers-31849102-vmss000001       Ready    agent   11m   v1.28.5
+
+NAME                                               READY   STATUS    RESTARTS   AGE
+sa-platform-app-api-gateway-7b9cd5d94c-8f92j       1/1     Running   0          3m
+sa-platform-app-api-gateway-7b9cd5d94c-m48x1       1/1     Running   0          3m
+sa-platform-auth-service-58dc9b646b-29kz9          1/1     Running   0          3m
+sa-platform-auth-service-58dc9b646b-qp892          1/1     Running   0          3m
+sa-platform-transaction-service-6f8b9b87f4-x98k1   1/1     Running   0          3m
+sa-platform-transaction-service-6f8b9b87f4-z481l   1/1     Running   0          3m
+sa-platform-approval-service-76b9f4c87-8910k       1/1     Running   0          3m
+sa-platform-approval-service-76b9f4c87-pl819       1/1     Running   0          3m
+sa-platform-notification-service-5c68b7d9-2901a    1/1     Running   0          3m
+sa-platform-notification-service-5c68b7d9-kl902    1/1     Running   0          3m
+sa-platform-postgresql-0                           1/1     Running   0          3m
+======================================================================

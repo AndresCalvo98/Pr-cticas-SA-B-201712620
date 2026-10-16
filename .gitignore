@@ -1,3 +1,16 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+
+# Binaries and downloaded tools
+*.exe
+argocd-linux-amd64
+kubeseal.exe
+argocd.exe
+
 # Secrets y Credenciales
 secrets-values.yaml
 

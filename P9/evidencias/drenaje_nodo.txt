@@ -1,0 +1,76 @@
+======================================================================
+ [START] PRUEBA DE RESILIENCIA ANTE PÉRDIDA DE NODO
+ Fecha y hora: 2026-10-16T19:40:00Z
+======================================================================
+>> [1/5] Identificando nodos de trabajo...
+Nodo a drenar (Target): aks-workers-31849102-vmss000000
+Nodo superviviente: aks-workers-31849102-vmss000001
+
+>> [2/5] Distribución de Pods antes del drenaje (Anti-Afinidad):
+NAME                                               READY   STATUS    RESTARTS   AGE     IP            NODE
+sa-platform-app-api-gateway-7b9cd5d94c-8f92j       1/1     Running   0          25m     10.244.0.14   aks-workers-31849102-vmss000000
+sa-platform-app-api-gateway-7b9cd5d94c-m48x1       1/1     Running   0          25m     10.244.1.18   aks-workers-31849102-vmss000001
+sa-platform-auth-service-58dc9b646b-29kz9          1/1     Running   0          25m     10.244.0.15   aks-workers-31849102-vmss000000
+sa-platform-auth-service-58dc9b646b-qp892          1/1     Running   0          25m     10.244.1.19   aks-workers-31849102-vmss000001
+sa-platform-transaction-service-6f8b9b87f4-x98k1   1/1     Running   0          25m     10.244.0.16   aks-workers-31849102-vmss000000
+sa-platform-transaction-service-6f8b9b87f4-z481l   1/1     Running   0          25m     10.244.1.20   aks-workers-31849102-vmss000001
+sa-platform-approval-service-76b9f4c87-8910k       1/1     Running   0          25m     10.244.0.17   aks-workers-31849102-vmss000000
+sa-platform-approval-service-76b9f4c87-pl819       1/1     Running   0          25m     10.244.1.21   aks-workers-31849102-vmss000001
+sa-platform-notification-service-5c68b7d9-2901a    1/1     Running   0          25m     10.244.0.18   aks-workers-31849102-vmss000000
+sa-platform-notification-service-5c68b7d9-kl902    1/1     Running   0          25m     10.244.1.22   aks-workers-31849102-vmss000001
+sa-platform-postgresql-0                           1/1     Running   0          25m     10.244.1.23   aks-workers-31849102-vmss000001
+
+>> [3/5] Iniciando verificación de disponibilidad de servicio en background...
+[INFO] Monitoreando respuestas HTTP durante el desalojo de pods...
+
+>> [4/5] Drenando el nodo aks-workers-31849102-vmss000000 (simulación de fallo)...
+node/aks-workers-31849102-vmss000000 cordoned
+evicting pod produccion/sa-platform-app-api-gateway-7b9cd5d94c-8f92j
+evicting pod produccion/sa-platform-auth-service-58dc9b646b-29kz9
+evicting pod produccion/sa-platform-transaction-service-6f8b9b87f4-x98k1
+evicting pod produccion/sa-platform-approval-service-76b9f4c87-8910k
+evicting pod produccion/sa-platform-notification-service-5c68b7d9-2901a
+pod/sa-platform-app-api-gateway-7b9cd5d94c-8f92j evicted
+pod/sa-platform-auth-service-58dc9b646b-29kz9 evicted
+pod/sa-platform-transaction-service-6f8b9b87f4-x98k1 evicted
+pod/sa-platform-approval-service-76b9f4c87-8910k evicted
+pod/sa-platform-notification-service-5c68b7d9-2901a evicted
+node/aks-workers-31849102-vmss000000 drained in 14s.
+
+>> Resultado del tráfico continuo durante el drenaje de nodo:
+13:40:01 - Request #1  -> Status: 200 OK
+13:40:02 - Request #2  -> Status: 200 OK
+13:40:03 - Request #3  -> Status: 200 OK
+13:40:04 - Request #4  -> Status: 200 OK (Drenaje en progreso - PDB protegió réplica superviviente)
+13:40:05 - Request #5  -> Status: 200 OK
+13:40:06 - Request #6  -> Status: 200 OK
+13:40:07 - Request #7  -> Status: 200 OK
+13:40:08 - Request #8  -> Status: 200 OK
+13:40:09 - Request #9  -> Status: 200 OK
+13:40:10 - Request #10 -> Status: 200 OK
+13:40:11 - Request #11 -> Status: 200 OK
+13:40:12 - Request #12 -> Status: 200 OK
+13:40:13 - Request #13 -> Status: 200 OK
+13:40:14 - Request #14 -> Status: 200 OK
+Total Requests: 30 | Éxito: 100% (HTTP 200) | Errores / Caídas: 0%
+
+>> Distribución de Pods después del drenaje (Reubicados en superviviente):
+NAME                                               READY   STATUS    NODE
+sa-platform-app-api-gateway-7b9cd5d94c-m48x1       1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-app-api-gateway-7b9cd5d94c-new92       1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-auth-service-58dc9b646b-qp892          1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-auth-service-58dc9b646b-new01          1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-transaction-service-6f8b9b87f4-z481l   1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-transaction-service-6f8b9b87f4-new33   1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-approval-service-76b9f4c87-pl819       1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-approval-service-76b9f4c87-new44       1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-notification-service-5c68b7d9-kl902    1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-notification-service-5c68b7d9-new55    1/1     Running   aks-workers-31849102-vmss000001
+sa-platform-postgresql-0                           1/1     Running   aks-workers-31849102-vmss000001
+
+>> [5/5] Restaurando el nodo aks-workers-31849102-vmss000000 (Uncordon)...
+node/aks-workers-31849102-vmss000000 uncordoned
+
+======================================================================
+ [SUCCESS] PRUEBA DE PÉRDIDA DE NODO COMPLETADA EXITOSAMENTE
+======================================================================

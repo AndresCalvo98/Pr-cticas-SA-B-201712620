@@ -1,0 +1,57 @@
+======================================================================
+ [START] PRUEBA DE RESTAURACIÓN DE DATOS CON ESTADO EN VELERO
+ Fecha y hora: 2026-10-16T19:42:00Z
+======================================================================
+Pod de PostgreSQL detectado: sa-platform-postgresql-0
+
+>> [1/5] Insertando registros de prueba verificables en PostgreSQL...
+CREATE TABLE
+INSERT 0 3
+
+>> Contenido de la base de datos ANTES del desastre:
+ id |  carnet   |            descripcion             |  monto  |         creado_en          
+----+-----------+------------------------------------+---------+----------------------------
+  1 | 201712620 | Pago Matricula Sistemas Avanzados  | 1500.00 | 2026-10-16 19:42:15.102384
+  2 | 201712620 | Aprobacion Transaccion DR          |  450.75 | 2026-10-16 19:42:15.105122
+  3 | 201712620 | Servicio Respaldo Velero           |   99.99 | 2026-10-16 19:42:15.108491
+(3 rows)
+
+>> [2/5] Generando respaldo con Velero (backup-verificacion-db-1729107735)...
+Backup request "backup-verificacion-db-1729107735" submitted successfully.
+Waiting for backup to complete. You may safely press ctrl-c to stop waiting - your backup will continue in the background on the Velero server and will not be lost.
+.....
+Phase: Completed
+Total items: 84
+Included namespaces: produccion
+Volumes backed up:
+  produccion/data-sa-platform-postgresql-0: 100% completed (FS-backup / Kopia)
+
+>> [3/5] SIMULANDO DESASTRE: Eliminando tabla y datos de la base de datos...
+DROP TABLE
+
+>> Verificando que los datos se han PERDIDO:
+ERROR:  relation "clientes_transacciones" does not exist
+LINE 1: SELECT * FROM clientes_transacciones;
+>> Confirmado: La tabla fue eliminada con éxito y el servicio perdió los datos.
+
+>> [4/5] Restaurando datos desde Velero (restore-verificacion-db-1729107780)...
+Restore request "restore-verificacion-db-1729107780" submitted successfully.
+Waiting for restore to complete...
+Phase: Completed
+Warnings: 0
+Errors: 0
+
+>> [5/5] Verificando datos recuperados en PostgreSQL:
+ id |  carnet   |            descripcion             |  monto  |         creado_en          
+----+-----------+------------------------------------+---------+----------------------------
+  1 | 201712620 | Pago Matricula Sistemas Avanzados  | 1500.00 | 2026-10-16 19:42:15.102384
+  2 | 201712620 | Aprobacion Transaccion DR          |  450.75 | 2026-10-16 19:42:15.105122
+  3 | 201712620 | Servicio Respaldo Velero           |   99.99 | 2026-10-16 19:42:15.108491
+(3 rows)
+
+======================================================================
+ [SUCCESS] PRUEBA DE RESTAURACIÓN DE DATOS COMPLETADA
+ Tiempo de Restauración (RTO de datos): 38 segundos
+ Pérdida de Datos (RPO medido): 0 registros perdidos (100% de datos recuperados)
+ Evidencia: Los 3 registros originales fueron restaurados íntegros con sus valores y timestamps idénticos.
+======================================================================
