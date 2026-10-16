@@ -25,19 +25,7 @@ resource "helm_release" "argocd" {
   depends_on = [azurerm_kubernetes_cluster.aks]
 }
 
-# 2. Instalación de Sealed Secrets Controller en kube-system
-resource "helm_release" "sealed_secrets" {
-  name             = "sealed-secrets"
-  repository       = "https://bitnami-labs.github.io/sealed-secrets"
-  chart            = "sealed-secrets"
-  version          = "2.14.2"
-  namespace        = "kube-system"
-  create_namespace = false
-
-  depends_on = [azurerm_kubernetes_cluster.aks]
-}
-
-# 3. Despliegue de la Aplicación Raíz (App-of-Apps)
+# 2. Despliegue de la Aplicación Raíz (App-of-Apps)
 resource "helm_release" "root_app" {
   name       = "sa-platform-root-app"
   chart      = "${path.module}/root-chart"
@@ -54,7 +42,6 @@ resource "helm_release" "root_app" {
   }
 
   depends_on = [
-    helm_release.argocd,
-    helm_release.sealed_secrets
+    helm_release.argocd
   ]
 }

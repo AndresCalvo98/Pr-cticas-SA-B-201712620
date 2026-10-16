@@ -43,7 +43,8 @@ KUBECONFIG_CMD=$(terraform output -raw aks_kubeconfig_command)
 eval "${KUBECONFIG_CMD}"
 
 # 5. Garantizar Continuidad de Secretos: Inyectar Llave Maestra de Sealed Secrets
-echo "[5/6] Restaurando Llave Maestra de Sealed Secrets para Continuidad de Secretos..."
+echo "[5/6] Instalando Sealed Secrets y Restaurando Llave Maestra para Continuidad de Secretos..."
+kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.26.0/controller.yaml
 if [ -f "${SECRETS_DIR}/sealed-secrets-key.yaml" ]; then
   kubectl apply -f "${SECRETS_DIR}/sealed-secrets-key.yaml"
   # Reiniciar el deployment para cargar inmediatamente la llave maestra restaurada
