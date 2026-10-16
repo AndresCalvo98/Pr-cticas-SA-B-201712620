@@ -31,7 +31,7 @@ variable "node_count" {
 variable "vm_size" {
   description = "Tamaño de las máquinas virtuales para los nodos (x86_64)"
   type        = string
-  default     = "Standard_D2s_v5"
+  default     = "Standard_D2s_v4"
 }
 
 variable "gitops_repo_url" {
