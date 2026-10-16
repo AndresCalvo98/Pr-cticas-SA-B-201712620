@@ -30,7 +30,8 @@ echo ">> Todas las herramientas (az, terraform, kubectl, helm) están disponible
 # 2. Inicialización de Terraform con Backend Remoto en Azure
 echo "[2/6] Inicializando Terraform con Estado Remoto..."
 cd "${TERRAFORM_DIR}"
-terraform init -reconfigure
+rm -f .terraform.lock.hcl
+terraform init -upgrade -reconfigure
 
 # 3. Aprovisionamiento de Infraestructura y Despliegue de ArgoCD + App-of-Apps
 echo "[3/6] Aprovisionando Clúster AKS, ArgoCD y App-of-Apps con Terraform..."
