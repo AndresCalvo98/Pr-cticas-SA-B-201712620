@@ -38,12 +38,11 @@ fi
 
 echo "=== [3/4] Instalando servidor Velero en clúster OKE con OCI Object Storage ==="
 # Limpiar despliegue previo si existía con error de imagen
-kubectl delete deployment velero -n velero --ignore-not-found=true --wait=false || true
-kubectl delete daemonset node-agent -n velero --ignore-not-found=true --wait=false || true
-sleep 3
+kubectl delete deployment velero -n velero --ignore-not-found=true --wait=true 2>/dev/null || true
+kubectl delete daemonset node-agent -n velero --ignore-not-found=true --wait=true 2>/dev/null || true
 
-# Usar nombres FQDN con prefijo docker.io/ requerido por el runtime de OKE (short name mode is enforcing)
-# y deshabilitar snapshots nativos de AWS ya que OCI utiliza node-agent (fs-backup) y almacenamiento S3
+# Generar manifiestos con dry-run para garantizar que todas las imágenes lleven el prefijo FQDN docker.io/
+# requerido por el runtime CRI-O de OCI OKE (short name mode is enforcing)
 velero install \
   --provider aws \
   --image docker.io/velero/velero:v1.14.0 \
@@ -53,9 +52,22 @@ velero install \
   --backup-location-config "region=${REGION},s3ForcePathStyle=true,s3Url=${S3_URL}" \
   --use-node-agent \
   --use-volume-snapshots=false \
-  --wait
+  --dry-run -o yaml > /tmp/velero-install.yaml
 
-rm -f ./credentials-velero
+# Reemplazar cualquier imagen corta sin docker.io/
+sed -i 's|image: velero/|image: docker.io/velero/|g' /tmp/velero-install.yaml
+sed -i 's|"image": "velero/|"image": "docker.io/velero/|g' /tmp/velero-install.yaml
+
+kubectl apply -f /tmp/velero-install.yaml
+rm -f /tmp/velero-install.yaml ./credentials-velero
+
+# Asegurar explícitamente las imágenes en los recursos
+kubectl set image deployment/velero -n velero velero=docker.io/velero/velero:v1.14.0 2>/dev/null || true
+kubectl set image daemonset/node-agent -n velero node-agent=docker.io/velero/velero:v1.14.0 2>/dev/null || true
+
+echo "Esperando que el deployment de Velero y DaemonSet node-agent estén 100% listos..."
+kubectl rollout status deployment/velero -n velero --timeout=180s || true
+kubectl rollout status daemonset/node-agent -n velero --timeout=180s || true
 
 # Limpiar posibles recursos previos
 kubectl delete volumesnapshotlocation default -n velero --ignore-not-found=true || true
