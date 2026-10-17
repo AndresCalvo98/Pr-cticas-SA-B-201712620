@@ -44,6 +44,7 @@ kubectl delete daemonset node-agent -n velero --ignore-not-found=true --wait=fal
 sleep 3
 
 # Usar nombres FQDN con prefijo docker.io/ requerido por el runtime de OKE (short name mode is enforcing)
+# y deshabilitar snapshots nativos de AWS ya que OCI utiliza node-agent (fs-backup) y almacenamiento S3
 velero install \
   --provider aws \
   --image docker.io/velero/velero:v1.14.0 \
@@ -52,9 +53,14 @@ velero install \
   --secret-file ./credentials-velero \
   --backup-location-config "region=${REGION},s3ForcePathStyle=true,s3Url=${S3_URL}" \
   --use-node-agent \
+  --use-volume-snapshots=false \
   --wait
 
 rm -f ./credentials-velero
+
+# Limpiar posibles recursos previos
+kubectl delete volumesnapshotlocation default -n velero --ignore-not-found=true || true
+velero backup delete sa-initial-backup --confirm 2>/dev/null || true
 
 echo "=== [4/4] Creando Schedule programado y Respaldo Inicial de Continuidad ==="
 # Programación periódica cada 6 horas con retención de 30 días (720 horas)
@@ -62,6 +68,7 @@ velero schedule create sa-platform-scheduled-backup \
   --schedule="0 */6 * * *" \
   --include-namespaces produccion \
   --default-volumes-to-fs-backup \
+  --snapshot-volumes=false \
   --ttl 720h0m0s || true
 
 # Ejecutar respaldo inicial que cubre produccion y kube-system (llave de Sealed Secrets)
@@ -69,6 +76,7 @@ echo ">> Ejecutando respaldo inicial verificado (producción y secretos)..."
 velero backup create sa-initial-backup \
   --include-namespaces produccion,kube-system \
   --default-volumes-to-fs-backup \
+  --snapshot-volumes=false \
   --wait
 
 echo ""

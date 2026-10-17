@@ -71,7 +71,7 @@ else
     BACKUP_NAME="backup-verificacion-db-$(date +%s)"
     echo "" | tee -a "$LOG_FILE"
     echo ">> [2/5] Generando respaldo con Velero ($BACKUP_NAME)..." | tee -a "$LOG_FILE"
-    velero backup create "$BACKUP_NAME" --include-namespaces produccion --default-volumes-to-fs-backup --wait | tee -a "$LOG_FILE"
+    velero backup create "$BACKUP_NAME" --include-namespaces produccion --default-volumes-to-fs-backup --snapshot-volumes=false --wait | tee -a "$LOG_FILE"
     velero backup describe "$BACKUP_NAME" | tee -a "$LOG_FILE"
 fi
 
