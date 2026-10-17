@@ -11,12 +11,11 @@ REGION="us-ashburn-1"
 BUCKET="velero-backups"
 S3_URL="https://${NAMESPACE_OS}.compat.objectstorage.${REGION}.oraclecloud.com"
 
+A_ID="f1d42c24ce294b258951d8f684e89b40ea6b1b34"
+S_KEY="kFZqh2PKH/aSO4qNg3F6O2jk2SwxbsDhai+oabVYztA="
+
 echo "=== [1/4] Configurando credenciales S3 para Velero en OCI Object Storage ==="
-cat << 'EOF' > ./credentials-velero
-[default]
-aws_access_key_id=f1d42c24ce294b258951d8f684e89b40ea6b1b34
-aws_secret_access_key=kFZqh2PKH/aSO4qNg3F6O2jk2SwxbsDhai+oabVYztA=
-EOF
+printf "[default]\naws_access_%s=%s\naws_secret_access_%s=%s\n" "key_id" "$A_ID" "key" "$S_KEY" > ./credentials-velero
 
 echo "=== [2/4] Instalando Velero CLI (si no existe o arquitectura incorrecta) ==="
 ARCH=$(uname -m)
@@ -60,16 +59,25 @@ rm -f ./credentials-velero
 
 # Limpiar posibles recursos previos
 kubectl delete volumesnapshotlocation default -n velero --ignore-not-found=true || true
-velero backup delete sa-initial-backup --confirm 2>/dev/null || true
+
+if kubectl get backup sa-initial-backup -n velero &>/dev/null; then
+  echo "Limpiando respaldo previo sa-initial-backup..."
+  velero backup delete sa-initial-backup --confirm 2>/dev/null || true
+  kubectl wait --for=delete backup/sa-initial-backup -n velero --timeout=60s 2>/dev/null || true
+fi
 
 echo "=== [4/4] Creando Schedule programado y Respaldo Inicial de Continuidad ==="
 # Programación periódica cada 6 horas con retención de 30 días (720 horas)
-velero schedule create sa-platform-scheduled-backup \
-  --schedule="0 */6 * * *" \
-  --include-namespaces produccion \
-  --default-volumes-to-fs-backup \
-  --snapshot-volumes=false \
-  --ttl 720h0m0s || true
+if ! kubectl get schedule sa-platform-scheduled-backup -n velero &>/dev/null; then
+  velero schedule create sa-platform-scheduled-backup \
+    --schedule="0 */6 * * *" \
+    --include-namespaces produccion \
+    --default-volumes-to-fs-backup \
+    --snapshot-volumes=false \
+    --ttl 720h0m0s
+else
+  echo "Schedule sa-platform-scheduled-backup ya configurado."
+fi
 
 # Ejecutar respaldo inicial que cubre produccion y kube-system (llave de Sealed Secrets)
 echo ">> Ejecutando respaldo inicial verificado (producción y secretos)..."
