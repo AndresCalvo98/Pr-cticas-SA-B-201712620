@@ -19,3 +19,6 @@ node_modules/
 
 # Mac / OS
 .DS_Store
+
+# GitOps Repository (cloned separately)
+software-avanzado-gitops/
