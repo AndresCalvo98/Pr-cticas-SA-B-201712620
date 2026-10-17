@@ -50,7 +50,7 @@ echo "[4/6] Instalando Controladores Core: Argo Rollouts, Kyverno y Sealed Secre
 # 4.1 Argo Rollouts (Entrega Progresiva)
 echo ">> Instalando Argo Rollouts..."
 kubectl create namespace argo-rollouts --dry-run=client -o yaml | kubectl apply -f -
-kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+kubectl apply --server-side --force-conflicts -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
 
 # 4.2 Kyverno (Políticas de Admisión)
 echo ">> Instalando Kyverno..."
@@ -58,7 +58,7 @@ kubectl apply --server-side --force-conflicts -f https://github.com/kyverno/kyve
 
 # 4.3 Sealed Secrets y Llave Maestra
 echo ">> Instalando Sealed Secrets y Restaurando Llave Maestra..."
-kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.26.0/controller.yaml
+kubectl apply --server-side --force-conflicts -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.26.0/controller.yaml
 if [ -f "${SECRETS_DIR}/sealed-secrets-key.yaml" ]; then
   echo ">> Inyectando Llave Maestra RSA existente de Sealed Secrets..."
   kubectl apply -f "${SECRETS_DIR}/sealed-secrets-key.yaml"
