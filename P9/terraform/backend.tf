@@ -20,8 +20,7 @@ terraform {
     skip_region_validation      = true
     skip_credentials_validation = true
     skip_metadata_api_check     = true
-    skip_requesting_account_id  = true
-    use_path_style              = true
+    force_path_style            = true
     # OCI Object Storage S3-compatible remote state locking habilitado (lock)
   }
 }
