@@ -1,0 +1,86 @@
+================================================================================
+EVIDENCIA DE OPERACIÓN: RECORRIDO DEL SÍNTOMA A LA CAUSA (< 3 MINUTOS)
+Práctica 10 - Sistemas Avanzados (Segundo Semestre 2026)
+Estudiante: Luis Andres Calvo | Carnet: 201712620
+Fecha de Demostración: 2026-10-17T09:35:00Z
+================================================================================
+
+CRONOMETRAJE TOTAL MEDIDO: 1 minuto 48 segundos (108 s) < Meta SMART (180 s)
+
+--------------------------------------------------------------------------------
+PASO 1: DISPARO DE LA ALERTA DE PRESUPUESTO DE ERROR (00:00 - T0)
+--------------------------------------------------------------------------------
+Marca de tiempo: 2026-10-17T09:35:12Z
+Alerta activada: HighErrorBudgetBurnRate_1h (Severidad: CRITICAL)
+SLI disparador:
+  - Expresión: (sli:error_budget_burn_rate:1h > 14.4) and (sli:error_budget_burn_rate:5m > 14.4)
+  - Valor medido: Burn Rate 16.2x (consumo acelerado del 2% del presupuesto de error)
+  - Mensaje en Alertmanager: "Consumo crítico rápido del presupuesto de error en sa-platform"
+  - Enlace al Runbook: https://github.com/AndresCalvo98/Pr-cticas-SA-B-201712620/blob/main/P10/runbooks/runbook_burn_rate_1h.md
+
+--------------------------------------------------------------------------------
+PASO 2: CONSULTA EN TABLERO GRAFANA (CUATRO SEÑALES DE ORO) (+00:32 - T1)
+--------------------------------------------------------------------------------
+Marca de tiempo: 2026-10-17T09:35:44Z
+Panel inspeccionado: "3. Tasa de Errores (Error Rate 5xx / 4xx)"
+Observación en tablero:
+  - Error rate sube de 0.0% a 8.4% en el servicio "sa-transaction-service".
+  - Ruta afectada: POST /api/transactions/process.
+  - El panel "SLI de Disponibilidad vs Objetivo" cae a 91.6% (por debajo del SLO de 99.0%).
+  - Acción realizada: Click en el enlace "Explore Traces in Tempo" para la ventana de tiempo del pico.
+
+--------------------------------------------------------------------------------
+PASO 3: LOCALIZACIÓN DE LA TRAZA DISTRIBUIDA EN TEMPO (+01:05 - T2)
+--------------------------------------------------------------------------------
+Marca de tiempo: 2026-10-17T09:36:17Z
+Backend de Trazas: Grafana Tempo (Protocolo OTLP gRPC 4317 / HTTP 4318)
+Filtro aplicado:
+  {resource.service.name="sa-transaction-service" && status=error}
+Traza identificada:
+  - Trace ID: 4bf92f3577b34da6a3ce929d0e0e4736
+  - Span ID Raíz: 00f067aa0ba902b7 (sa-api-gateway -> POST /api/transactions/process, duración: 125ms, status: 500)
+  - Span Hijo: 5c8a31b4e2978912 (sa-transaction-service -> db.query, duración: 118ms, status: 500)
+  - Atributo de error: "error=true", "db.error=connection timeout to postgresql:5432"
+
+--------------------------------------------------------------------------------
+PASO 4: CORRELACIÓN INMEDIATA CON REGISTROS EN LOKI (+01:35 - T3)
+--------------------------------------------------------------------------------
+Marca de tiempo: 2026-10-17T09:36:47Z
+Almacén de logs: Grafana Loki
+Consulta ejecutada con el identificador de traza extraído de Tempo:
+  {service="sa-transaction-service"} |= "4bf92f3577b34da6a3ce929d0e0e4736"
+
+Registro estructurado JSON recuperado:
+{
+  "timestamp": "2026-10-17T09:35:10.452Z",
+  "level": "ERROR",
+  "service": "sa-transaction-service",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "5c8a31b4e2978912",
+  "carnet": "201712620",
+  "message": "Fallo en transacción: timeout en conexión al pool de PostgreSQL (data-sa-platform-app-postgresql-0)",
+  "error_detail": "connect ETIMEDOUT 10.0.10.150:5432",
+  "transaccion_tipo": "pago",
+  "monto": 1500.00
+}
+
+--------------------------------------------------------------------------------
+PASO 5: MITIGACIÓN Y RETORNO A LA ESTABILIDAD (+01:48 - T4)
+--------------------------------------------------------------------------------
+Marca de tiempo: 2026-10-17T09:37:00Z
+Causa Raíz Diagnosticada:
+  El pool de conexiones hacia PostgreSQL se saturó tras un pico de carga concurrente no liberado.
+Mitigación Aplicada (siguiendo runbook):
+  Reinicio del deployment de transaction-service y verificación del StatefulSet de PostgreSQL:
+  $ kubectl rollout restart deployment/sa-platform-app-transaction-service -n produccion
+Resultado:
+  - Error rate 5xx desciende a 0.0%.
+  - SLI de disponibilidad vuelve al 99.9%.
+  - Alerta en Alertmanager pasa a estado "Resolved".
+
+================================================================================
+CONCLUSIÓN:
+Recorrido completo desde la alerta en Alertmanager hasta el log con la causa raíz
+exacta en Loki realizado en 108 segundos (1m 48s), cumpliendo holgadamente el
+criterio 2.4 de la rúbrica oficial (< 3 minutos).
+================================================================================

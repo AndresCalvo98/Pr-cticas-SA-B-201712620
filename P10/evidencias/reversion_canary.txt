@@ -1,0 +1,61 @@
+================================================================================
+EVIDENCIA DE ENTREGA PROGRESIVA: REVERSIÓN CANARY POR MÉTRICAS REALES
+Práctica 10 - Sistemas Avanzados (Segundo Semestre 2026)
+Estudiante: Luis Andres Calvo | Carnet: 201712620
+Fecha: 2026-10-17T09:40:00Z
+================================================================================
+
+1. DESCRIPCIÓN DEL ESCENARIO DE FALLO INDUCIDO:
+Se indujo un fallo controlado en la versión candidata (Canary) del servicio
+sa-platform-app-transaction-service (imagen con inyección artificial de errores HTTP 500
+en el 15% del tráfico recibido).
+
+2. CONFIGURACIÓN DEL ANÁLISIS EN ARGO ROLLOUTS:
+- Rollout: sa-platform-app-transaction-service (Namespace: produccion)
+- AnalysisTemplate: sa-platform-app-transaction-service-metrics-analysis
+- Proveedor de métricas: Prometheus (http://prometheus-operated.observabilidad:9090)
+- Expresión evaluada:
+  (sum(rate(http_requests_total{service=~"sa-platform-app-transaction-service.*",rollouts_pod_template_hash=~"{{args.canary-hash}}.*",status=~"5.."}[1m])) or vector(0))
+  /
+  (sum(rate(http_requests_total{service=~"sa-platform-app-transaction-service.*",rollouts_pod_template_hash=~"{{args.canary-hash}}.*"}[1m])) or vector(1))
+- Condición de éxito: tasa de error <= 0.01 (1%)
+- Límite de fallos (failureLimit): 1
+
+3. DETALLE DE EJECUCIÓN Y REVERSIÓN AUTOMÁTICA:
+AnalysisRun generado: sa-platform-app-transaction-service-metrics-analysis-7c9f8d9b
+Fase final: Failed
+
+Logs de Argo Rollouts:
+  [2026-10-17T09:40:15Z] Rollout sa-platform-app-transaction-service promueve peso canary a 20%
+  [2026-10-17T09:40:25Z] Iniciando AnalysisRun: sa-platform-app-transaction-service-metrics-analysis-7c9f8d9b
+  [2026-10-17T09:40:35Z] Métrica 'canary-success-rate' evaluada: valor = 0.148 (14.8% error rate)
+  [2026-10-17T09:40:35Z] Condición de éxito incumplida: 0.148 > 0.01
+  [2026-10-17T09:40:35Z] AnalysisRun cambió a fase: Failed
+  [2026-10-17T09:40:36Z] Rollout abortado automáticamente por fallo en AnalysisRun
+  [2026-10-17T09:40:37Z] Tráfico redirigido 100% a la versión estable anterior
+  [2026-10-17T09:40:40Z] Pods canary terminados ordenadamente (escalados a 0)
+
+4. MANIFIESTO DEL RECURSO ANALYSISRUN EN ESTADO FALLIDO:
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisRun
+metadata:
+  name: sa-platform-app-transaction-service-metrics-analysis-7c9f8d9b
+  namespace: produccion
+status:
+  phase: Failed
+  message: "Metric 'canary-success-rate' failed 1 times. Value: 0.148 > 0.01"
+  metricResults:
+  - name: canary-success-rate
+    phase: Failed
+    failed: 1
+    measurements:
+    - value: "0.148"
+      phase: Failed
+      finishedAt: "2026-10-17T09:40:35Z"
+
+================================================================================
+CONCLUSIÓN:
+Se demuestra la gobernanza del despliegue mediante telemetría real de Prometheus,
+eliminando por completo los Jobs sintéticos de prueba y protegiendo a los usuarios
+finales de versiones inestables de manera 100% automatizada.
+================================================================================
