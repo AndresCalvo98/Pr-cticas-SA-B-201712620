@@ -16,8 +16,8 @@
 | **Repositorio GitOps** | [https://github.com/AndresCalvo98/software-avanzado-gitops](https://github.com/AndresCalvo98/software-avanzado-gitops) |
 | **Aplicación raíz en ArgoCD** | `sa-platform-root-app` — Namespace: `argocd` |
 | **Punto de entrada del bootstrap** | [`P9/bootstrap.sh`](file:///c:/Users/Andres/Desktop/SA%20Practicas/Pr-cticas-SA-B-201712620/P9/bootstrap.sh) |
-| **Backend remoto de Terraform** | Tipo: `azurerm` — Storage Account: `sasp9tfstate10854`, Contenedor: `tfstate`, Clave: `p9.terraform.tfstate`, RG: `rg-sa-p9-dr` (Location: `eastus`) con Lease Locking nativo |
-| **Schedule de Velero** | Nombre: `sa-platform-scheduled-backup` — Destino: Azure Blob Storage contenedor `velero-backups` (Cuenta: `sasp9tfstate10854`) |
+| **Backend remoto de Terraform** | Tipo: `s3` (OCI Object Storage S3-Compatible) — Bucket: `tfstate-p9`, Namespace: `idg5jjfcjyks`, Clave: `p9.terraform.tfstate`, Región: `us-ashburn-1` con state lease locking habilitado (`lock`) |
+| **Schedule de Velero** | Nombre: `sa-platform-scheduled-backup` — Destino: OCI Object Storage bucket `velero-backups` (Namespace: `idg5jjfcjyks`, Región: `us-ashburn-1`) |
 | **Reconstrucción cronometrada** | [`P9/evidencias/reconstruccion_cronometrada.txt`](file:///c:/Users/Andres/Desktop/SA%20Practicas/Pr-cticas-SA-B-201712620/P9/evidencias/reconstruccion_cronometrada.txt) |
 | **Restauración de datos** | [`P9/evidencias/restauracion_datos.txt`](file:///c:/Users/Andres/Desktop/SA%20Practicas/Pr-cticas-SA-B-201712620/P9/evidencias/restauracion_datos.txt) |
 | **Prueba de pérdida de nodo** | [`P9/evidencias/drenaje_nodo.txt`](file:///c:/Users/Andres/Desktop/SA%20Practicas/Pr-cticas-SA-B-201712620/P9/evidencias/drenaje_nodo.txt) |

@@ -21,8 +21,6 @@ resource "helm_release" "argocd" {
     name  = "crds.install"
     value = "true"
   }
-
-  depends_on = [azurerm_kubernetes_cluster.aks]
 }
 
 # 2. Despliegue de la Aplicación Raíz (App-of-Apps)

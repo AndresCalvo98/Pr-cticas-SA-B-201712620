@@ -1,37 +1,13 @@
-variable "resource_group_name" {
-  description = "Nombre del Resource Group en Azure"
+variable "region" {
+  description = "Región de OCI"
   type        = string
-  default     = "rg-sa-p9-dr"
-}
-
-variable "location" {
-  description = "Región de Azure para los recursos"
-  type        = string
-  default     = "eastus"
+  default     = "us-ashburn-1"
 }
 
 variable "cluster_name" {
-  description = "Nombre del clúster AKS"
+  description = "Nombre del clúster OKE"
   type        = string
-  default     = "aks-sa-p9-cluster"
-}
-
-variable "dns_prefix" {
-  description = "Prefijo DNS para el clúster AKS"
-  type        = string
-  default     = "aks-sa-p9-dns"
-}
-
-variable "node_count" {
-  description = "Número inicial de nodos worker (mínimo 2 para prueba de pérdida de nodo)"
-  type        = number
-  default     = 2
-}
-
-variable "vm_size" {
-  description = "Tamaño de las máquinas virtuales para los nodos (x86_64)"
-  type        = string
-  default     = "Standard_D2s_v4"
+  default     = "oke-sa-p9-cluster"
 }
 
 variable "gitops_repo_url" {
