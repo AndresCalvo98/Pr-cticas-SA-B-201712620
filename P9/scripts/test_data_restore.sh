@@ -11,12 +11,20 @@ mkdir -p evidencias
 
 export PATH="${HOME}/bin:/usr/local/bin:${PATH}"
 
-if ! command -v velero &> /dev/null; then
-  echo "Velero CLI no encontrado en PATH. Configurando binario de Velero..."
+ARCH=$(uname -m)
+case "$ARCH" in
+  x86_64) VELERO_ARCH="amd64" ;;
+  aarch64|arm64) VELERO_ARCH="arm64" ;;
+  *) VELERO_ARCH="amd64" ;;
+esac
+
+if ! velero version --client-only &> /dev/null; then
+  echo "Velero CLI no encontrado o arquitectura incorrecta. Descargando Velero CLI para $ARCH ($VELERO_ARCH)..."
   mkdir -p "${HOME}/bin"
-  curl -fsSL https://github.com/vmware-tanzu/velero/releases/download/v1.14.0/velero-v1.14.0-linux-amd64.tar.gz | tar -xz -C /tmp/
-  mv /tmp/velero-v1.14.0-linux-amd64/velero "${HOME}/bin/"
-  rm -rf /tmp/velero-v1.14.0-linux-amd64
+  rm -f "${HOME}/bin/velero"
+  curl -fsSL "https://github.com/vmware-tanzu/velero/releases/download/v1.14.0/velero-v1.14.0-linux-${VELERO_ARCH}.tar.gz" | tar -xz -C /tmp/
+  mv /tmp/velero-v1.14.0-linux-${VELERO_ARCH}/velero "${HOME}/bin/"
+  rm -rf /tmp/velero-v1.14.0-linux-${VELERO_ARCH}
   chmod +x "${HOME}/bin/velero"
 fi
 
