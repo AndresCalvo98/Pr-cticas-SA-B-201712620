@@ -171,8 +171,7 @@ else
   bad "Velero NO esta instalado"
 fi
 SCHED=$(kubectl get schedules -n "$NS_VELERO" -o json 2>/dev/null)
-NSCH=$(echo "${SCHED:-{}}" | jq -r '[.items[]?] | length' 2>/dev/null | tail -n 1)
-NSCH="${NSCH:-0}"
+NSCH=$(echo "${SCHED:-{}}" | jq '[.items[]?] | length' 2>/dev/null || echo 0)
 if [ "${NSCH:-0}" -ge 1 ]; then
   ok "Respaldo programado ($NSCH schedule)"; VE=$((VE+3))
   echo "$SCHED" | jq -r 2>/dev/null '.items[]? | "  schedule=\(.metadata.name) cron=\(.spec.schedule) ttl=\(.spec.template.ttl // "sin ttl")"'
@@ -183,8 +182,7 @@ else
   bad "Sin respaldos programados: solo respaldos manuales"
 fi
 BK=$(kubectl get backups -n "$NS_VELERO" -o json 2>/dev/null)
-NOK=$(echo "${BK:-{}}" | jq -r '[.items[]? | select(.status.phase=="Completed")] | length' 2>/dev/null | tail -n 1)
-NOK="${NOK:-0}"
+NOK=$(echo "${BK:-{}}" | jq '[.items[]? | select(.status.phase=="Completed")] | length' 2>/dev/null || echo 0)
 if [ "${NOK:-0}" -ge 1 ]; then
   ok "$NOK respaldo(s) completado(s)"; VE=$((VE+3))
   echo "$BK" | jq -r 2>/dev/null '[.items[]? | select(.status.phase=="Completed")] | sort_by(.status.completionTimestamp) | last
@@ -194,7 +192,7 @@ else
 fi
 BSL=$(kubectl get backupstoragelocations -n "$NS_VELERO" -o json 2>/dev/null)
 echo "${BSL:-{}}" | jq -r 2>/dev/null '.items[]? | "  destino: provider=\(.spec.provider) bucket=\(.spec.objectStorage.bucket // "?") estado=\(.status.phase // "?")"' 2>/dev/null
-echo "${BSL:-{}}" | jq -e '[.items[]? | select(.spec.provider != "" and (.spec.objectStorage.bucket // "") != "")] | length > 0' >/dev/null 2>&1 \
+echo "${BSL:-{}}" | jq -e '.items[]? | select(.spec.provider != "" and (.spec.objectStorage.bucket // "") != "")' >/dev/null 2>&1 \
   && { ok "Destino de respaldo externo configurado"; VE=$((VE+2)); } \
   || bad "Destino de respaldo no configurado o interno al cluster"
 echo "${BK:-{}}" | jq -e '.items[]? | select((.spec.defaultVolumesToFsBackup == true) or (.spec.snapshotVolumes == true) or (.status.volumeSnapshotsAttempted // 0) > 0)' >/dev/null 2>&1 \
@@ -244,9 +242,8 @@ kubectl get pdb -n "$NS" -o json 2>/dev/null \
 grep -rqE 'podAntiAffinity|topologySpreadConstraints' "$GITOPS" 2>/dev/null \
   && { ok "Anti-afinidad o distribucion topologica declarada"; RE=$((RE+3)); } \
   || bad "Sin anti-afinidad ni topologySpreadConstraints"
-MINREP=$(kubectl get deploy,rollout -n "$NS" -o json 2>/dev/null \
-         | jq '[.items[]?.spec.replicas // 1] | min' 2>/dev/null | tail -n 1)
-MINREP="${MINREP:-0}"
+MINREP=$(kubectl get deploy,rollout,statefulset -n "$NS" -o json 2>/dev/null \
+         | jq '[.items[]?.spec.replicas // 1] | min' 2>/dev/null || echo 0)
 echo "  Replicas minimas entre las cargas de trabajo: ${MINREP:-?}"
 [ "${MINREP:-0}" -ge 2 ] 2>/dev/null && { ok "Toda carga de trabajo tiene 2 o mas replicas"; RE=$((RE+2)); } \
                                      || bad "Existe al menos una carga de trabajo con una sola replica"
@@ -263,8 +260,7 @@ else
                     || bad "Sin volumenes persistentes en el namespace $NS"
 fi
 RS=$(kubectl get restores -n "$NS_VELERO" -o json 2>/dev/null)
-NRS=$(echo "${RS:-{}}" | jq -r '[.items[]? | select(.status.phase=="Completed" or .status.phase=="PartiallyFailed")] | length' 2>/dev/null | tail -n 1)
-NRS="${NRS:-0}"
+NRS=$(echo "${RS:-{}}" | jq '[.items[]? | select(.status.phase=="Completed" or .status.phase=="PartiallyFailed")] | length' 2>/dev/null || echo 0)
 if [ "${NRS:-0}" -ge 1 ]; then
   ok "$NRS restauracion(es) ejecutada(s)"; DA=$((DA+3))
   echo "${RS}" | jq -r 2>/dev/null '.items[]? | "  restore=\(.metadata.name) fase=\(.status.phase) desde=\(.spec.backupName)"'
