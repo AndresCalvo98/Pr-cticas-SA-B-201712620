@@ -38,9 +38,16 @@ if ! velero version --client-only &> /dev/null; then
 fi
 
 echo "=== [3/4] Instalando servidor Velero en clúster OKE con OCI Object Storage ==="
+# Limpiar despliegue previo si existía con error de imagen
+kubectl delete deployment velero -n velero --ignore-not-found=true --wait=false || true
+kubectl delete daemonset node-agent -n velero --ignore-not-found=true --wait=false || true
+sleep 3
+
+# Usar nombres FQDN con prefijo docker.io/ requerido por el runtime de OKE (short name mode is enforcing)
 velero install \
   --provider aws \
-  --plugins velero/velero-plugin-for-aws:v1.10.0 \
+  --image docker.io/velero/velero:v1.14.0 \
+  --plugins docker.io/velero/velero-plugin-for-aws:v1.10.0 \
   --bucket "${BUCKET}" \
   --secret-file ./credentials-velero \
   --backup-location-config "region=${REGION},s3ForcePathStyle=true,s3Url=${S3_URL}" \
